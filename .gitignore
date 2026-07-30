@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# GitHub rejects files over 100 MB in normal Git.
+# Keep this source workbook locally or add it later with Git LFS.
+input_data/Registro detalles residuos_2026-2018.xlsx
