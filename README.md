@@ -1,6 +1,6 @@
 # Dashboard Garbigunes Garbiker
 
-Dashboard estático para analizar operaciones de recogida de residuos en Garbigunes de Bizkaia.
+Dashboard estático para analizar operaciones de garbigunes fijos y móvil, logística de recogida de residuos y captación AW en Bizkaia.
 
 ## Estructura
 
