@@ -31,3 +31,64 @@ La migración crea el esquema `analytics` y estas tablas:
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
+
+## Cargar datos
+
+El script de carga es:
+
+```text
+scripts/load_supabase_data.py
+```
+
+Necesita una clave `service_role`, no la `anon key`.
+
+Crear un fichero local `.env.local` en la raiz del proyecto:
+
+```bash
+SUPABASE_URL=https://lixjsmvxnihwlysnixvj.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=pegar_service_role_key_aqui
+```
+
+`.env.local` esta excluido de Git.
+
+Antes de cargar datos por REST, comprobar en Supabase que el esquema `analytics` esta expuesto en:
+
+```text
+Project Settings > API > Data API Settings > Exposed schemas
+```
+
+Debe incluir:
+
+```text
+analytics
+```
+
+Probar transformaciones sin conectar:
+
+```bash
+python3 scripts/load_supabase_data.py --dry-run
+```
+
+Cargar dimensiones/configuracion:
+
+```bash
+python3 scripts/load_supabase_data.py --tables dim_garbigunes config_familias_aw
+```
+
+Cargar salidas:
+
+```bash
+python3 scripts/load_supabase_data.py --tables fact_salidas_transporte
+```
+
+Cargar captacion AW, que es la tabla mas grande:
+
+```bash
+python3 scripts/load_supabase_data.py --tables fact_captacion_aw --batch-size 1000
+```
+
+Por defecto, cada tabla se borra antes de recargarse. Para anadir filas sin borrar:
+
+```bash
+python3 scripts/load_supabase_data.py --tables fact_salidas_transporte --skip-delete
+```
