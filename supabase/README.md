@@ -107,6 +107,14 @@ supabase/migrations/20260803_0010_weighted_aw_equivalences.sql
 
 Esta migracion anade `allocation_weight` a `analytics.config_residuos_salida_aw_equivalencias` y actualiza las vistas AW vs salidas para usar kg ponderados. La tabla editable se carga desde `data/reference/residuos/residuos_salida_aw_equivalencias.csv`, donde `pesos_aw` debe sumar 1 por residuo de salida.
 
+Para separar matriculas y codigos internos en incidencias, ejecutar:
+
+```text
+supabase/migrations/20260803_0011_normalize_incident_assets.sql
+```
+
+Esta migracion anade `asset_code` a `analytics.fact_incidencias_flota`, actualiza vistas de incidencias y evita que codigos internos tipo `C0392 - - -` se traten como matriculas.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -220,6 +228,8 @@ Cargar incidencias y refuerzos:
 ```bash
 python3 scripts/load_supabase_data.py --tables fact_incidencias_flota fact_refuerzos
 ```
+
+Si se aplica la migracion de `asset_code`, recargar despues `fact_incidencias_flota` para separar matriculas y codigos internos.
 
 Si cambian `config_site_aliases`, recargar despues `fact_refuerzos` para actualizar `place_key`, `place_type` y `site_key`.
 

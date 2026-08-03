@@ -5,6 +5,7 @@ import csv
 import gzip
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -26,6 +27,11 @@ DATA_SOURCES = json.loads(DATA_SOURCE_CONFIG.read_text(encoding="utf-8"))["sourc
 DEFAULT_SCHEMA = "analytics"
 DEFAULT_BATCH_SIZE = 1000
 POSTGRES_NUMERIC_14_3_LIMIT = 100_000_000_000
+VEHICLE_PLATE_PATTERNS = (
+    re.compile(r"\b([0-9]{4})[-\s]?([A-Z]{3})\b"),
+    re.compile(r"\b([A-Z]{1,2})[-\s]?([0-9]{4,5})[-\s]?([A-Z]{1,2})\b"),
+)
+ASSET_CODE_PATTERN = re.compile(r"\b(C[0-9]{3,5})\b", re.I)
 
 TABLE_ORDER = (
     "dim_garbigunes",
@@ -113,6 +119,29 @@ def clean_text(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def extract_vehicle_plate(value: Any) -> str | None:
+    text = clean_text(value) or ""
+    upper = text.upper()
+    for pattern in VEHICLE_PLATE_PATTERNS:
+        match = pattern.search(upper)
+        if not match:
+            continue
+        return "-".join(part for part in match.groups() if part)
+    return None
+
+
+def extract_asset_code(value: Any) -> str | None:
+    text = clean_text(value) or ""
+    if extract_vehicle_plate(text):
+        return None
+    upper = text.upper()
+    match = ASSET_CODE_PATTERN.search(upper)
+    if match:
+        return match.group(1).upper()
+    candidate = re.split(r"\s+-\s+", upper, maxsplit=1)[0].strip()
+    return candidate or None
 
 
 def clean_bool(value: Any) -> bool | None:
@@ -408,7 +437,8 @@ def iter_fact_incidencias_flota() -> Iterator[dict[str, Any]]:
             "year": clean_int(row.get("Año")),
             "area": clean_text(area),
             "center": clean_text(row.get("Centro")),
-            "vehicle_plate": helpers.extract_vehicle_plate(row.get("Vehículo/maquinaria")),
+            "vehicle_plate": extract_vehicle_plate(row.get("Vehículo/maquinaria")),
+            "asset_code": extract_asset_code(row.get("Vehículo/maquinaria")),
             "vehicle_description": clean_text(vehicle_description),
             "fuel": clean_text(row.get("Combustible")),
             "provider": clean_text(row.get("Proveedor")),

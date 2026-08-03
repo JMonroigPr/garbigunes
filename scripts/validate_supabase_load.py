@@ -34,6 +34,7 @@ DEFAULT_VIEWS = (
     "v_aw_monthly",
     "v_aw_cp_flows",
     "v_incidencias_monthly",
+    "v_incident_asset_code_quality",
     "v_refuerzos_monthly",
     "v_vehicle_monthly_context",
     "v_quality_summary",

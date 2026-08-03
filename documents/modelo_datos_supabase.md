@@ -192,13 +192,13 @@ Campos clave:
 
 - `incident_date`, `month_key`, `year`
 - `area`, `center`
-- `vehicle_plate`, `vehicle_description`
+- `vehicle_plate`, `asset_code`, `vehicle_description`
 - `provider`
 - `breakdown_type`, `breakdown_subgroup`, `breakdown_subsubgroup`
 - `amount`, `amount_without_vat`
 - `is_garbigunes_scope`
 
-Uso: analisis de incidencias y talleres. Se carga todo el fichero y se marca si pertenece al ambito Garbigunes.
+Uso: analisis de incidencias y talleres. Se carga todo el fichero y se marca si pertenece al ambito Garbigunes. `vehicle_plate` solo contiene matriculas normalizadas tipo `0000-ABC`; codigos internos tipo `C0392 - - -` se conservan en `asset_code` para no mezclarlos con flota ni con salidas transportadas.
 
 ### `analytics.fact_refuerzos`
 
@@ -220,6 +220,7 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_aw_monthly`: captacion AW por mes y dimensiones territoriales/residuo.
 - `analytics.v_aw_cp_flows`: flujos CP a Garbigune por mes y familia/subfamilia.
 - `analytics.v_incidencias_monthly`: incidencias por mes, vehiculo, proveedor y tipo de averia.
+- `analytics.v_incident_asset_code_quality`: control de incidencias con matricula, codigo interno o identificador no reconocido.
 - `analytics.v_refuerzos_monthly`: refuerzos por mes, lugar, motivo y persona.
 - `analytics.v_vehicle_monthly_context`: salidas e incidencias mensuales por vehiculo.
 - `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
