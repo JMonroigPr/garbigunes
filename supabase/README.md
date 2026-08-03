@@ -99,6 +99,14 @@ supabase/migrations/20260803_0009_aw_weight_corrections.sql
 
 Esta migracion crea `analytics.quality_aw_weight_corrections`, `analytics.v_aw_weight_anomalies_review` y actualiza `analytics.v_quality_summary`.
 
+Para evitar doble conteo en equivalencias multiples, ejecutar:
+
+```text
+supabase/migrations/20260803_0010_weighted_aw_equivalences.sql
+```
+
+Esta migracion anade `allocation_weight` a `analytics.config_residuos_salida_aw_equivalencias` y actualiza las vistas AW vs salidas para usar kg ponderados. La tabla editable se carga desde `data/reference/residuos/residuos_salida_aw_equivalencias.csv`, donde `pesos_aw` debe sumar 1 por residuo de salida.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -219,6 +227,12 @@ Validar conteos despues de cargar:
 
 ```bash
 python3 scripts/validate_supabase_load.py
+```
+
+Validar cobertura y pesos de equivalencias salida -> AW:
+
+```bash
+python3 scripts/validate_aw_equivalences.py
 ```
 
 Si `python3` del sistema no tiene las dependencias de Excel/ODS, usar el runtime del proyecto:

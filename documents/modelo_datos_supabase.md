@@ -101,10 +101,11 @@ Campos clave:
 - `residuo_salida`
 - `familia_aw`
 - `family_rank`
+- `allocation_weight`
 - `criterio`
 - `active`
 
-Uso: comparar entradas AW y salidas transportadas por familias de residuo sin hardcodear la relacion en Python ni en el frontend. Un residuo de salida puede mapear a varias familias AW; `family_rank` conserva el orden/criterio del CSV editable.
+Uso: comparar entradas AW y salidas transportadas por familias de residuo sin hardcodear la relacion en Python ni en el frontend. Un residuo de salida puede mapear a varias familias AW; `family_rank` conserva el orden/criterio del CSV editable y `allocation_weight` evita doble conteo repartiendo los kg de salida entre familias. Para cada `residuo_salida`, los pesos activos deberian sumar 1.
 
 ### `analytics.etl_load_runs`
 
@@ -224,9 +225,9 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
 - `analytics.v_aw_weight_anomalies_review`: anomalias AW enriquecidas con correccion, `effective_kg` y estado efectivo de revision.
 - `analytics.v_site_alias_quality`: comprueba si cada alias cruza con `dim_garbigunes`.
-- `analytics.v_salidas_aw_family_monthly`: salidas transportadas agregadas por familia AW equivalente.
-- `analytics.v_aw_vs_salidas_family_monthly`: comparativa mensual generica AW vs salidas por `site_key` y familia AW.
-- `analytics.v_residuos_salida_aw_equivalence_quality`: cobertura de residuos de salida en la tabla de equivalencias.
+- `analytics.v_salidas_aw_family_monthly`: salidas transportadas agregadas por familia AW equivalente con kg ponderados por `allocation_weight`.
+- `analytics.v_aw_vs_salidas_family_monthly`: comparativa mensual generica AW vs salidas por `site_key` y familia AW, usando salidas ponderadas.
+- `analytics.v_residuos_salida_aw_equivalence_quality`: cobertura de residuos de salida y control de pesos activos en la tabla de equivalencias.
 - `analytics.v_etl_load_runs_latest`: ultimas ejecuciones del pipeline con fuentes, estado y rutas de logs.
 - `analytics.v_etl_load_runs_table_counts`: historico de filas cargadas por tabla y ejecucion.
 
@@ -257,3 +258,16 @@ Tambien inserta un resumen auditable en `analytics.etl_load_runs`.
 ```
 
 5. Publicar Vercel si cambian artefactos del dashboard.
+
+## Validaciones especificas
+
+Validar cobertura y ponderacion de equivalencias salida -> AW:
+
+```bash
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/validate_aw_equivalences.py
+```
+
+Genera:
+
+- `data/processed/quality/aw_equivalence_quality.csv`
+- `data/processed/quality/aw_equivalence_quality.json`

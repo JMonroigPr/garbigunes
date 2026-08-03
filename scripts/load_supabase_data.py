@@ -250,13 +250,21 @@ def iter_config_residuos_salida_aw_equivalencias() -> Iterator[dict[str, Any]]:
         familias_text = clean_text(row.get("familias_aw"))
         if not residuo_salida or not familias_text:
             continue
-        for rank, familia_aw in enumerate((item.strip() for item in familias_text.split("|")), start=1):
+        familias = [item.strip() for item in familias_text.split("|") if item.strip()]
+        raw_weights = [clean_optional_float(item) for item in str(row.get("pesos_aw", "")).split("|") if str(item).strip()]
+        if len(raw_weights) != len(familias) or any(weight is None or weight <= 0 for weight in raw_weights):
+            weights = [1 / len(familias)] * len(familias)
+        else:
+            total_weight = sum(weight for weight in raw_weights if weight is not None)
+            weights = [(weight or 0) / total_weight for weight in raw_weights]
+        for rank, familia_aw in enumerate(familias, start=1):
             if not familia_aw:
                 continue
             yield {
                 "residuo_salida": residuo_salida.upper(),
                 "familia_aw": familia_aw,
                 "family_rank": rank,
+                "allocation_weight": round(weights[rank - 1], 6),
                 "criterio": clean_text(row.get("criterio")),
                 "active": True,
             }
