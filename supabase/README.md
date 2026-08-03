@@ -91,6 +91,14 @@ supabase/migrations/20260803_0008_etl_load_runs.sql
 
 Esta migracion crea `analytics.etl_load_runs` y las vistas `analytics.v_etl_load_runs_latest` y `analytics.v_etl_load_runs_table_counts`.
 
+Para registrar correcciones revisadas de anomalias AW, ejecutar:
+
+```text
+supabase/migrations/20260803_0009_aw_weight_corrections.sql
+```
+
+Esta migracion crea `analytics.quality_aw_weight_corrections`, `analytics.v_aw_weight_anomalies_review` y actualiza `analytics.v_quality_summary`.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -182,6 +190,8 @@ Cargar calidad AW:
 ```bash
 python3 scripts/load_supabase_data.py --tables quality_aw_weight_anomalies
 ```
+
+Las correcciones de anomalias AW no se recargan desde ficheros locales por defecto. Se editan en Supabase en `analytics.quality_aw_weight_corrections` para no sobrescribir respuestas del cliente ni revisiones manuales.
 
 Cargar salidas:
 

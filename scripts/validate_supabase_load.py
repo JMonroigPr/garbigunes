@@ -37,6 +37,7 @@ DEFAULT_VIEWS = (
     "v_refuerzos_monthly",
     "v_vehicle_monthly_context",
     "v_quality_summary",
+    "v_aw_weight_anomalies_review",
     "v_site_alias_quality",
     "v_salidas_aw_family_monthly",
     "v_aw_vs_salidas_family_monthly",

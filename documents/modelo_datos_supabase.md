@@ -154,6 +154,22 @@ Campos clave:
 
 Uso: preparar preguntas al cliente y corregir pesos sin perder entradas.
 
+### `analytics.quality_aw_weight_corrections`
+
+Grano: una correccion validada para una anomalia AW.
+
+Campos clave:
+
+- `anomaly_id`
+- `original_kg`
+- `corrected_kg`
+- `client_response`
+- `reviewed_by`, `reviewed_at`
+- `correction_status`
+- `notes`
+
+Uso: registrar el flujo de correccion sin modificar ni borrar la anomalia original. Esta tabla se edita en Supabase y no forma parte de las recargas masivas por defecto, para evitar perder respuestas del cliente o revisiones manuales.
+
 ### `analytics.dim_flota`
 
 Grano: un vehiculo.
@@ -206,6 +222,7 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_refuerzos_monthly`: refuerzos por mes, lugar, motivo y persona.
 - `analytics.v_vehicle_monthly_context`: salidas e incidencias mensuales por vehiculo.
 - `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
+- `analytics.v_aw_weight_anomalies_review`: anomalias AW enriquecidas con correccion, `effective_kg` y estado efectivo de revision.
 - `analytics.v_site_alias_quality`: comprueba si cada alias cruza con `dim_garbigunes`.
 - `analytics.v_salidas_aw_family_monthly`: salidas transportadas agregadas por familia AW equivalente.
 - `analytics.v_aw_vs_salidas_family_monthly`: comparativa mensual generica AW vs salidas por `site_key` y familia AW.
