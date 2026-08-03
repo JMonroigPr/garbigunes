@@ -79,6 +79,19 @@ Campos clave:
 
 Uso: taxonomia editable AW.
 
+### `analytics.config_site_aliases`
+
+Grano: un nombre operativo o alias de localizacion.
+
+Campos clave:
+
+- `raw_name`: nombre tal como aparece o se normaliza desde fuentes operativas.
+- `site_key`: clave normalizada objetivo.
+- `site_type`: `fixed`, `mobile`, `beach`, `non_fixed`, `external`, `quality` o `review`.
+- `active`, `notes`
+
+Uso: evitar aliases hardcodeados en Python y controlar de forma editable que nombres como `AMOREBIETA ETXANO` u `ORDUNA` crucen con `dim_garbigunes`. Los puntos no equivalentes a Garbigune fijo pueden mantenerse como `non_fixed` o `review`.
+
 ## Nuevas tablas de calidad y recursos
 
 ### `analytics.config_quality_rules`
@@ -162,6 +175,7 @@ Uso: presion de recursos y coberturas.
 - `analytics.v_refuerzos_monthly`: refuerzos por mes, lugar, motivo y persona.
 - `analytics.v_vehicle_monthly_context`: salidas e incidencias mensuales por vehiculo.
 - `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
+- `analytics.v_site_alias_quality`: comprueba si cada alias cruza con `dim_garbigunes`.
 
 Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas del dashboard final deberian crearse solo cuando se cierre el diseno del entregable.
 

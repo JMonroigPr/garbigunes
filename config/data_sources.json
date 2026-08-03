@@ -61,6 +61,9 @@
     "garbigune_locations": {
       "current": "data/reference/garbigunes/garbigunes_ubicaciones.csv"
     },
+    "site_aliases": {
+      "current": "data/reference/garbigunes/site_aliases.csv"
+    },
     "aw_families": {
       "current": "data/reference/residuos/residuos_aw_familias.csv"
     },

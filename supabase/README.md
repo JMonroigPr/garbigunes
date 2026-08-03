@@ -59,6 +59,14 @@ supabase/migrations/20260803_0004_add_site_key_to_salidas.sql
 
 Esta migracion anade `site_key` a `analytics.fact_salidas_transporte` y actualiza `analytics.v_salidas_monthly`.
 
+Para gestionar aliases de localizaciones sin hardcodearlos en Python, ejecutar:
+
+```text
+supabase/migrations/20260803_0005_site_aliases.sql
+```
+
+Esta migracion crea `analytics.config_site_aliases` y `analytics.v_site_alias_quality`.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -116,7 +124,7 @@ La politica actual de fuentes es:
 Cargar dimensiones/configuracion:
 
 ```bash
-python3 scripts/load_supabase_data.py --tables dim_garbigunes dim_flota config_familias_aw config_quality_rules
+python3 scripts/load_supabase_data.py --tables dim_garbigunes dim_flota config_site_aliases config_familias_aw config_quality_rules
 ```
 
 Cargar calidad AW:
@@ -130,6 +138,8 @@ Cargar salidas:
 ```bash
 python3 scripts/load_supabase_data.py --tables fact_salidas_transporte
 ```
+
+Si cambian `config_site_aliases`, recargar despues `fact_salidas_transporte` para que `site_key` quede actualizado.
 
 Cargar captacion AW, que es la tabla mas grande:
 

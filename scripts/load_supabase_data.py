@@ -30,6 +30,7 @@ POSTGRES_NUMERIC_14_3_LIMIT = 100_000_000_000
 TABLE_ORDER = (
     "dim_garbigunes",
     "dim_flota",
+    "config_site_aliases",
     "config_familias_aw",
     "config_quality_rules",
     "quality_aw_weight_anomalies",
@@ -42,6 +43,7 @@ TABLE_ORDER = (
 TABLE_DELETE_FILTERS = {
     "dim_garbigunes": "site_key=not.is.null",
     "dim_flota": "vehicle_plate=not.is.null",
+    "config_site_aliases": "raw_name=not.is.null",
     "config_familias_aw": "residuo_aw=not.is.null",
     "config_quality_rules": "rule_key=not.is.null",
     "quality_aw_weight_anomalies": "id=not.is.null",
@@ -58,6 +60,7 @@ def config_path(domain: str, key: str, fallback: Path) -> Path:
 
 
 GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
+SITE_ALIASES_INPUT = config_path("site_aliases", "current", ROOT / "data" / "reference" / "garbigunes" / "site_aliases.csv")
 AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
 QUALITY_RULES_INPUT = config_path("quality_rules", "current", ROOT / "data" / "reference" / "quality" / "quality_rules.csv")
 AW_WEIGHT_ANOMALIES_INPUT = config_path("aw_weight_anomalies", "current", ROOT / "data" / "processed" / "quality" / "aw_weight_anomalies.csv")
@@ -220,6 +223,21 @@ def iter_config_familias_aw() -> Iterator[dict[str, Any]]:
             "ejemplos": clean_text(row.get("ejemplos")),
             "criterio": clean_text(row.get("criterio")),
             "activo": True,
+        }
+
+
+def iter_config_site_aliases() -> Iterator[dict[str, Any]]:
+    for row in read_csv_dicts(SITE_ALIASES_INPUT):
+        raw_name = clean_text(row.get("raw_name"))
+        site_key = clean_text(row.get("site_key"))
+        if not raw_name or not site_key:
+            continue
+        yield {
+            "raw_name": raw_name.upper(),
+            "site_key": site_key.upper(),
+            "site_type": clean_text(row.get("site_type")) or "fixed",
+            "active": clean_bool(row.get("active")),
+            "notes": clean_text(row.get("notes")),
         }
 
 
@@ -411,6 +429,7 @@ def iter_fact_refuerzos() -> Iterator[dict[str, Any]]:
 TABLE_LOADERS = {
     "dim_garbigunes": iter_dim_garbigunes,
     "dim_flota": iter_dim_flota,
+    "config_site_aliases": iter_config_site_aliases,
     "config_familias_aw": iter_config_familias_aw,
     "config_quality_rules": iter_config_quality_rules,
     "quality_aw_weight_anomalies": iter_quality_aw_weight_anomalies,

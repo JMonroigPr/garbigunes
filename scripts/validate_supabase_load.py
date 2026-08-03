@@ -18,6 +18,7 @@ DEFAULT_SCHEMA = "analytics"
 DEFAULT_TABLES = (
     "dim_garbigunes",
     "dim_flota",
+    "config_site_aliases",
     "config_familias_aw",
     "config_quality_rules",
     "quality_aw_weight_anomalies",
@@ -35,6 +36,7 @@ DEFAULT_VIEWS = (
     "v_refuerzos_monthly",
     "v_vehicle_monthly_context",
     "v_quality_summary",
+    "v_site_alias_quality",
 )
 
 

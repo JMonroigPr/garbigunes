@@ -71,6 +71,7 @@ MOVIL_MAIN_INPUT = config_path("movil", "historical", INPUT / "AST_GarbigunesMov
 MOVIL_UPDATED_INPUT = config_paths("movil", "updates", [UPDATED_INPUT / "4. Transportes garbigune móvil" / "GarbigunesMovil-Todos.xlsx"])[0]
 CONVENIOS_INPUT = config_path("convenios", "current", INPUT / "2026_Ayuntamientos_Conveniados_Garbigunes.ods")
 GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
+SITE_ALIASES_INPUT = config_path("site_aliases", "current", INPUT / "site_aliases.csv")
 CP_GEOJSON_INPUT = config_path("cp_geojson", "current", INPUT / "bizkaia_codigos_postales.geojson")
 COBERTURAS_UPDATED_INPUT = config_path("coberturas", "current", UPDATED_INPUT / "1.Coberturas" / "Coberturas-solo_GAR.xlsx")
 AW_UPDATED_INPUT = config_path("captacion_aw", "update_not_used", UPDATED_INPUT / "2. Entradas garbigunes" / "DetallesEntradasGarbiker.xlsx")
@@ -275,21 +276,32 @@ def normalize_text(value: Any) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+SITE_ALIAS_CACHE: dict[str, str] | None = None
+
+
+def read_site_aliases() -> dict[str, str]:
+    global SITE_ALIAS_CACHE
+    if SITE_ALIAS_CACHE is not None:
+        return SITE_ALIAS_CACHE
+    aliases: dict[str, str] = {}
+    if SITE_ALIASES_INPUT.exists():
+        frame = read_csv(SITE_ALIASES_INPUT)
+        for _, row in frame.iterrows():
+            active = clean_key(row.get("active")).lower()
+            if active and active not in {"true", "1", "yes", "si", "s"}:
+                continue
+            raw_name = normalize_text(row.get("raw_name"))
+            site_key = clean_key(row.get("site_key")).upper()
+            if raw_name and site_key:
+                aliases[raw_name] = site_key
+    SITE_ALIAS_CACHE = aliases
+    return aliases
+
+
 def normalize_site(value: Any) -> str:
     text = normalize_text(value)
     text = re.sub(r"^GARBIGUNE\s+", "", text).strip()
-    aliases = {
-        "AMOREBIETA ETXANO": "AMOREBIETA-ETXANO",
-        "ORDUNA": "ORDUÑA",
-        "SOPELA": "SOPELANA",
-        "GAUTEGIZ DE ARTEAGA": "GAUTEGIZ ARTEAGA",
-        "GERNIKA LUMO": "GERNIKA",
-        "MARKINA XEMEIN": "MARKINA",
-        "KARRANTZA HARANA VALLE DE CARRANZA": "KARRANTZA",
-        "CARRANZA": "KARRANTZA",
-        "GUENES": "GÜEÑES",
-    }
-    return aliases.get(text, text)
+    return read_site_aliases().get(text, text)
 
 
 def month_label(value: Any) -> str:
