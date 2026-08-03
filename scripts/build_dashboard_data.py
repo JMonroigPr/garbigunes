@@ -29,6 +29,7 @@ RECORDS_OUTPUT = ROOT / "dashboard" / "dashboard_records.json.gz"
 RECORDS_SCRIPT_OUTPUT = ROOT / "dashboard" / "dashboard_records.js"
 CAPTURE_GEOJSON_OUTPUT = ROOT / "dashboard" / "bizkaia_codigos_postales.geojson"
 AW_AGGREGATES_OUTPUT = ROOT / "dashboard" / "aw_capture_aggregates.json.gz"
+AW_MAX_ENTRY_KG = 50_000
 def config_path(domain: str, key: str, fallback: Path) -> Path:
     value = DATA_SOURCES.get(domain, {}).get(key)
     return ROOT / value if value else fallback
@@ -526,6 +527,9 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
     aggregates: dict[tuple[str, ...], dict[str, Any]] = {}
     total_rows = 0
     skipped_rows = 0
+    anomalous_weight_rows = 0
+    anomalous_weight_kg = 0.0
+    anomalous_weight_examples: list[dict[str, Any]] = []
     raw_columns: set[str] = set()
     first_date: pd.Timestamp | None = None
     last_date: pd.Timestamp | None = None
@@ -552,6 +556,25 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
                 kg = parse_number_value(get("Peso")) if "Peso" in index else None
                 if parsed_date is None or pd.isna(kg):
                     skipped_rows += 1
+                    continue
+                if kg < 0 or kg > AW_MAX_ENTRY_KG:
+                    skipped_rows += 1
+                    anomalous_weight_rows += 1
+                    anomalous_weight_kg += float(kg)
+                    if len(anomalous_weight_examples) < 10:
+                        site = clean_key(get("Garbigune")).upper()
+                        waste = clean_key(get("Residuo")).upper()
+                        anomalous_weight_examples.append(
+                            {
+                                "date": str(parsed_date.date()),
+                                "site": site,
+                                "waste": waste,
+                                "cp": format_cp(get("C.P.")),
+                                "unit": clean_key(get("Unidad")),
+                                "kg": safe_num(kg, 2),
+                                "sourceSheet": sheet.title,
+                            }
+                        )
                     continue
                 if first_date is None or parsed_date < first_date:
                     first_date = parsed_date
@@ -619,6 +642,10 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
     return records, {
         "rawRowsRead": int(total_rows),
         "skippedRows": int(skipped_rows),
+        "anomalousWeightRows": int(anomalous_weight_rows),
+        "anomalousWeightKg": safe_num(anomalous_weight_kg, 2),
+        "anomalousWeightMaxKg": int(AW_MAX_ENTRY_KG),
+        "anomalousWeightExamples": anomalous_weight_examples,
         "sourceColumns": sorted(raw_columns),
         "from": str(first_date.date()) if first_date is not None else "",
         "to": str(last_date.date()) if last_date is not None else "",
@@ -784,6 +811,10 @@ def build_capture_data() -> dict[str, Any]:
             "source": str(source.relative_to(ROOT)),
             "rawRowsRead": int(source_meta["rawRowsRead"]),
             "skippedRows": int(source_meta["skippedRows"]),
+            "anomalousWeightRows": int(source_meta["anomalousWeightRows"]),
+            "anomalousWeightKg": safe_num(source_meta["anomalousWeightKg"], 2),
+            "anomalousWeightMaxKg": int(source_meta["anomalousWeightMaxKg"]),
+            "anomalousWeightExamples": source_meta["anomalousWeightExamples"],
             "aggregateFile": AW_AGGREGATES_OUTPUT.name,
             "entryMetricMethod": aggregate_payload["entryMetricMethod"],
             "timeFilterNote": aggregate_payload["timeFilterNote"],
@@ -1137,6 +1168,13 @@ def build() -> dict[str, Any]:
             "value": int(capture["meta"]["rows"]),
             "share": capture["meta"]["geoKgShare"],
             "detail": f"{capture['meta']['geoKgShare']}% del peso AW cruza con polígonos de CP; {capture['meta']['cpKgShare']}% tiene CP informado.",
+        },
+        {
+            "check": "Pesos AW plausibles",
+            "status": "warning" if capture["meta"]["anomalousWeightRows"] else "ok",
+            "value": int(capture["meta"]["anomalousWeightRows"]),
+            "share": percentage(capture["meta"]["anomalousWeightRows"], capture["meta"]["rawRowsRead"]),
+            "detail": f"Se excluyen entradas AW con peso negativo o superior a {capture['meta']['anomalousWeightMaxKg']:,} kg por línea. Peso bruto excluido: {capture['meta']['anomalousWeightKg']:,.0f} kg.",
         },
         {
             "check": "Residuos AW con familia",

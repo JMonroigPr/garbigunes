@@ -23,6 +23,7 @@ DATA_SOURCES = json.loads(DATA_SOURCE_CONFIG.read_text(encoding="utf-8"))["sourc
 
 DEFAULT_SCHEMA = "analytics"
 DEFAULT_BATCH_SIZE = 1000
+POSTGRES_NUMERIC_14_3_LIMIT = 100_000_000_000
 
 TABLE_ORDER = (
     "dim_garbigunes",
@@ -227,6 +228,24 @@ TABLE_LOADERS = {
 }
 
 
+def validate_batch(table: str, batch: list[dict[str, Any]], inserted: int) -> None:
+    if table not in {"fact_salidas_transporte", "fact_captacion_aw"}:
+        return
+    for offset, row in enumerate(batch, start=1):
+        kg = float(row.get("kg") or 0)
+        if abs(kg) >= POSTGRES_NUMERIC_14_3_LIMIT:
+            position = inserted + offset
+            context = {
+                key: row.get(key)
+                for key in ("entry_date", "service_date", "garbigune", "residuo", "residuo_aw", "cp", "unit", "kg")
+                if key in row
+            }
+            raise SupabaseError(
+                f"{table}: row {position:,} has kg={kg:,.3f}, outside numeric(14,3). "
+                f"Context: {context}"
+            )
+
+
 class SupabaseRestClient:
     def __init__(self, url: str, service_role_key: str, schema: str) -> None:
         self.url = url.rstrip("/")
@@ -295,6 +314,7 @@ def load_table(
 
     inserted = 0
     for batch in chunks(loader(), batch_size):
+        validate_batch(table, batch, inserted)
         client.insert_batch(table, batch)
         inserted += len(batch)
         if inserted % (batch_size * 10) == 0:
