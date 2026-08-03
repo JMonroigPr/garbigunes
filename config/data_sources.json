@@ -73,6 +73,12 @@
     "cp_geojson": {
       "current": "data/reference/geodata/bizkaia_codigos_postales.geojson"
     },
+    "quality_rules": {
+      "current": "data/reference/quality/quality_rules.csv"
+    },
+    "aw_weight_anomalies": {
+      "current": "data/processed/quality/aw_weight_anomalies.csv"
+    },
     "coberturas": {
       "current": "data/raw/updates/2026-07/recursos/Coberturas-solo_GAR.xlsx"
     },

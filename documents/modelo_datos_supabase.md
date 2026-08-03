@@ -1,0 +1,189 @@
+# Modelo de datos Supabase
+
+Este documento describe la capa analitica `analytics` del proyecto Garbigunes. El objetivo es separar el modelo de datos estable de las visualizaciones actuales del dashboard, para que el entregable final pueda cambiar sin rehacer la ingestion base.
+
+## Principios
+
+- Las tablas `fact_*` y `dim_*` contienen datos base reutilizables.
+- Las tablas `config_*` contienen reglas o taxonomias editables.
+- Las tablas `quality_*` conservan incidencias de calidad para revision, sin borrar evidencias.
+- Las vistas `v_*` son agregados genericos de bajo acoplamiento: sirven para dashboards, QA y exploracion, pero no representan tarjetas concretas.
+- Los ficheros pesados originales permanecen en `data/raw`; Supabase guarda datos limpios o agregados adecuados para consulta.
+
+## Fuentes
+
+El catalogo activo esta en `config/data_sources.json`.
+
+- Salidas transportadas: pesadas de transporte Garbigunes, historico 2023-YTD mas actualizaciones 2025/2026.
+- Captacion AW: registro historico de entradas 2018-2026 con CP y municipio de origen.
+- Incidencias flota: historico 2022-2026YTD mas actualizacion 2025-2026.
+- Flota: inventario actualizado de vehiculos.
+- Refuerzos: historico mas actualizaciones 2025/2026.
+- Configuracion: familias AW, equivalencias AW y reglas de calidad.
+
+## Tablas principales
+
+### `analytics.fact_salidas_transporte`
+
+Grano: un servicio/pesada de salida transportada.
+
+Campos clave:
+
+- `service_date`, `month_key`
+- `garbigune`, `residuo`
+- `vehicle_plate`, `driver_name`
+- `base`, `route_name`
+- `kg`
+
+Uso: eficiencia operativa de salidas, conductores, vehiculos, rutas y garbigunes.
+
+### `analytics.fact_captacion_aw`
+
+Grano: agregado mensual AW por garbigune, CP, residuo, familia, subfamilia, usuario y unidad.
+
+Campos clave:
+
+- `entry_date`, `month_key`
+- `garbigune`, `site_key`
+- `cp`
+- `residuo_aw`, `familia_aw`, `subfamilia_aw`
+- `user_type`, `unit`
+- `entries`, `source_rows`
+- `kg`
+
+Uso: captacion territorial AW, flujos CP a Garbigune, composicion por familia y usuario.
+
+Nota: si una entrada AW tiene peso anomalo, la entrada se mantiene en `entries/source_rows`, pero el peso queda en cuarentena y no suma a `kg` hasta validacion.
+
+### `analytics.dim_garbigunes`
+
+Grano: un Garbigune o punto movil.
+
+Campos clave:
+
+- `site_key`, `garbigune`
+- `codigo_postal`, `direccion`, `lat`, `lon`
+- `es_movil`, `activo`
+
+Uso: mapas, cruces territoriales y normalizacion de nombres.
+
+### `analytics.config_familias_aw`
+
+Grano: un residuo AW.
+
+Campos clave:
+
+- `residuo_aw`
+- `familia_aw`, `subfamilia_aw`
+- `descripcion_familia`, `ejemplos`, `criterio`
+
+Uso: taxonomia editable AW.
+
+## Nuevas tablas de calidad y recursos
+
+### `analytics.config_quality_rules`
+
+Grano: una regla de calidad editable.
+
+Campos clave:
+
+- `rule_key`
+- `domain`, `metric`
+- `severity`
+- `threshold_value`, `threshold_unit`
+- `action`, `description`, `active`
+
+Uso: centralizar umbrales y criterios de revision sin hardcodearlos en visualizaciones.
+
+### `analytics.quality_aw_weight_anomalies`
+
+Grano: una entrada AW con peso individual en revision.
+
+Campos clave:
+
+- `source_file`, `source_sheet`, `source_row`
+- `anomaly_date`, `garbigune`, `site_key`
+- `residuo_aw`, `familia_aw`, `subfamilia_aw`
+- `user_type`, `origin_municipality`, `account_municipality`, `cp`, `unit`
+- `original_kg`, `validated_kg`, `threshold_kg`
+- `reason`, `client_question`, `proposed_action`
+- `review_status`, `client_response`, `reviewed_at`
+
+Uso: preparar preguntas al cliente y corregir pesos sin perder entradas.
+
+### `analytics.dim_flota`
+
+Grano: un vehiculo.
+
+Campos clave:
+
+- `vehicle_plate`
+- `brand`, `model`, `fuel`
+- `center`, `service`
+- `registration_date`, `observations`
+
+Uso: contexto de vehiculos para salidas e incidencias.
+
+### `analytics.fact_incidencias_flota`
+
+Grano: una incidencia de flota.
+
+Campos clave:
+
+- `incident_date`, `month_key`, `year`
+- `area`, `center`
+- `vehicle_plate`, `vehicle_description`
+- `provider`
+- `breakdown_type`, `breakdown_subgroup`, `breakdown_subsubgroup`
+- `amount`, `amount_without_vat`
+- `is_garbigunes_scope`
+
+Uso: analisis de incidencias y talleres. Se carga todo el fichero y se marca si pertenece al ambito Garbigunes.
+
+### `analytics.fact_refuerzos`
+
+Grano: un refuerzo/cobertura.
+
+Campos clave:
+
+- `reinforcement_date`, `month_key`, `year`
+- `covered_by`
+- `place`, `reason`
+- `author`, `notes`
+
+Uso: presion de recursos y coberturas.
+
+## Vistas genericas
+
+- `analytics.v_salidas_monthly`: salidas por mes y dimensiones operativas.
+- `analytics.v_aw_monthly`: captacion AW por mes y dimensiones territoriales/residuo.
+- `analytics.v_aw_cp_flows`: flujos CP a Garbigune por mes y familia/subfamilia.
+- `analytics.v_incidencias_monthly`: incidencias por mes, vehiculo, proveedor y tipo de averia.
+- `analytics.v_refuerzos_monthly`: refuerzos por mes, lugar, motivo y persona.
+- `analytics.v_vehicle_monthly_context`: salidas e incidencias mensuales por vehiculo.
+- `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
+
+Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas del dashboard final deberian crearse solo cuando se cierre el diseno del entregable.
+
+## Flujo recomendado
+
+1. Actualizar ficheros en `data/raw` o `data/reference`.
+2. Regenerar artefactos compactos:
+
+```bash
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/build_dashboard_data.py
+```
+
+3. Cargar Supabase:
+
+```bash
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/load_supabase_data.py
+```
+
+4. Validar:
+
+```bash
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/validate_supabase_load.py
+```
+
+5. Publicar Vercel si cambian artefactos del dashboard.

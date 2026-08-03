@@ -36,6 +36,21 @@ supabase/migrations/20260803_0002_grant_analytics_api_permissions.sql
 
 Esta segunda migracion concede permisos al rol `service_role` para poder cargar datos por la API REST.
 
+Para la capa de calidad, flota, refuerzos y vistas genericas, ejecutar tambien:
+
+```text
+supabase/migrations/20260803_0003_quality_and_generic_views.sql
+```
+
+Esta tercera migracion crea:
+
+- `analytics.config_quality_rules`
+- `analytics.quality_aw_weight_anomalies`
+- `analytics.dim_flota`
+- `analytics.fact_incidencias_flota`
+- `analytics.fact_refuerzos`
+- vistas genericas `analytics.v_*` de bajo acoplamiento
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -93,7 +108,13 @@ La politica actual de fuentes es:
 Cargar dimensiones/configuracion:
 
 ```bash
-python3 scripts/load_supabase_data.py --tables dim_garbigunes config_familias_aw
+python3 scripts/load_supabase_data.py --tables dim_garbigunes dim_flota config_familias_aw config_quality_rules
+```
+
+Cargar calidad AW:
+
+```bash
+python3 scripts/load_supabase_data.py --tables quality_aw_weight_anomalies
 ```
 
 Cargar salidas:
@@ -106,6 +127,25 @@ Cargar captacion AW, que es la tabla mas grande:
 
 ```bash
 python3 scripts/load_supabase_data.py --tables fact_captacion_aw --batch-size 1000
+```
+
+Cargar incidencias y refuerzos:
+
+```bash
+python3 scripts/load_supabase_data.py --tables fact_incidencias_flota fact_refuerzos
+```
+
+Validar conteos despues de cargar:
+
+```bash
+python3 scripts/validate_supabase_load.py
+```
+
+Si `python3` del sistema no tiene las dependencias de Excel/ODS, usar el runtime del proyecto:
+
+```bash
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/load_supabase_data.py
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/validate_supabase_load.py
 ```
 
 Por defecto, cada tabla se borra antes de recargarse. Para anadir filas sin borrar:

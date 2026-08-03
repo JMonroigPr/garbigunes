@@ -16,6 +16,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 INPUT = ROOT / "input_data"
 DASHBOARD = ROOT / "dashboard"
 DATA_SOURCE_CONFIG = ROOT / "config" / "data_sources.json"
@@ -27,16 +29,26 @@ POSTGRES_NUMERIC_14_3_LIMIT = 100_000_000_000
 
 TABLE_ORDER = (
     "dim_garbigunes",
+    "dim_flota",
     "config_familias_aw",
+    "config_quality_rules",
+    "quality_aw_weight_anomalies",
     "fact_salidas_transporte",
     "fact_captacion_aw",
+    "fact_incidencias_flota",
+    "fact_refuerzos",
 )
 
 TABLE_DELETE_FILTERS = {
     "dim_garbigunes": "site_key=not.is.null",
+    "dim_flota": "vehicle_plate=not.is.null",
     "config_familias_aw": "residuo_aw=not.is.null",
+    "config_quality_rules": "rule_key=not.is.null",
+    "quality_aw_weight_anomalies": "id=not.is.null",
     "fact_salidas_transporte": "id=not.is.null",
     "fact_captacion_aw": "id=not.is.null",
+    "fact_incidencias_flota": "id=not.is.null",
+    "fact_refuerzos": "id=not.is.null",
 }
 
 
@@ -47,6 +59,8 @@ def config_path(domain: str, key: str, fallback: Path) -> Path:
 
 GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
 AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
+QUALITY_RULES_INPUT = config_path("quality_rules", "current", ROOT / "data" / "reference" / "quality" / "quality_rules.csv")
+AW_WEIGHT_ANOMALIES_INPUT = config_path("aw_weight_anomalies", "current", ROOT / "data" / "processed" / "quality" / "aw_weight_anomalies.csv")
 
 
 class SupabaseError(RuntimeError):
@@ -106,19 +120,61 @@ def clean_bool(value: Any) -> bool | None:
 def clean_float(value: Any) -> float | None:
     if value is None or value == "":
         return None
-    return float(str(value).replace(",", "."))
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return None
+    return float(text.replace(",", "."))
 
 
 def clean_int(value: Any) -> int:
     if value is None or value == "":
         return 0
-    return int(float(value))
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return 0
+    return int(float(text.replace(",", ".")))
 
 
 def clean_kg(value: Any) -> float:
     if value is None or value == "":
         return 0.0
     return float(value)
+
+
+def clean_optional_float(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        text = str(value).strip()
+        if not text or text.lower() == "nan":
+            return None
+        if "," in text:
+            return float(text.replace(".", "").replace(",", "."))
+        return float(text)
+    except (TypeError, ValueError):
+        return None
+
+
+def build_helpers():
+    try:
+        from scripts import build_dashboard_data as helpers
+    except ModuleNotFoundError as error:
+        raise SupabaseError(
+            "Missing local spreadsheet dependency while reading source files. "
+            "Run with the project runtime Python used for dashboard builds, or install the missing dependency."
+        ) from error
+    return helpers
+
+
+def clean_date(value: Any) -> str | None:
+    helpers = build_helpers()
+    parsed = helpers.parse_single_date(value)
+    return str(parsed.date()) if parsed is not None else None
+
+
+def clean_month(value: Any) -> str | None:
+    date_value = clean_date(value)
+    return date_value[:7] if date_value else None
 
 
 def read_csv_dicts(path: Path) -> Iterator[dict[str, str]]:
@@ -164,6 +220,73 @@ def iter_config_familias_aw() -> Iterator[dict[str, Any]]:
             "ejemplos": clean_text(row.get("ejemplos")),
             "criterio": clean_text(row.get("criterio")),
             "activo": True,
+        }
+
+
+def iter_config_quality_rules() -> Iterator[dict[str, Any]]:
+    for row in read_csv_dicts(QUALITY_RULES_INPUT):
+        rule_key = clean_text(row.get("rule_key"))
+        if not rule_key:
+            continue
+        yield {
+            "rule_key": rule_key,
+            "domain": clean_text(row.get("domain")) or "general",
+            "metric": clean_text(row.get("metric")) or rule_key,
+            "severity": clean_text(row.get("severity")) or "warning",
+            "threshold_value": clean_optional_float(row.get("threshold_value")),
+            "threshold_unit": clean_text(row.get("threshold_unit")),
+            "action": clean_text(row.get("action")),
+            "description": clean_text(row.get("description")),
+            "active": clean_bool(row.get("active")),
+        }
+
+
+def iter_quality_aw_weight_anomalies() -> Iterator[dict[str, Any]]:
+    for row in read_csv_dicts(AW_WEIGHT_ANOMALIES_INPUT):
+        yield {
+            "source_file": clean_text(row.get("source_file")) or "unknown",
+            "source_sheet": clean_text(row.get("source_sheet")),
+            "source_row": clean_int(row.get("source_row")),
+            "anomaly_date": clean_text(row.get("fecha")),
+            "garbigune": clean_text(row.get("garbigune")),
+            "site_key": clean_text(row.get("site_key")),
+            "residuo_aw": clean_text(row.get("residuo_aw")),
+            "familia_aw": clean_text(row.get("familia_aw")),
+            "subfamilia_aw": clean_text(row.get("subfamilia_aw")),
+            "user_type": clean_text(row.get("tipo_usuario")),
+            "origin_municipality": clean_text(row.get("municipio_origen")),
+            "account_municipality": clean_text(row.get("municipio_cuenta")),
+            "cp": clean_text(row.get("cp")),
+            "unit": clean_text(row.get("unidad")),
+            "original_kg": clean_kg(row.get("peso_original_kg")),
+            "validated_kg": clean_kg(row.get("peso_validado_kg")),
+            "threshold_kg": clean_kg(row.get("umbral_kg")),
+            "reason": clean_text(row.get("motivo")),
+            "client_question": clean_text(row.get("pregunta_cliente")),
+            "proposed_action": clean_text(row.get("accion_propuesta")),
+            "review_status": "pending",
+        }
+
+
+def iter_dim_flota() -> Iterator[dict[str, Any]]:
+    helpers = build_helpers()
+    source = helpers.preferred_existing(helpers.FLOTA_UPDATED_INPUT, helpers.FLOTA_INPUT)
+    frame = helpers.read_ods(source)
+    for _, row in frame.iterrows():
+        plate = helpers.clean_key(row.get("Matrícula"))
+        if not plate:
+            continue
+        yield {
+            "vehicle_plate": plate,
+            "brand": clean_text(row.get("Marca")),
+            "model": clean_text(row.get("Modelo")),
+            "fuel": clean_text(row.get("COMBUSTIBLE")),
+            "center": clean_text(row.get("Centro")),
+            "service": clean_text(row.get("Servicio")),
+            "registration_date": clean_date(row.get("Fecha matriculación")),
+            "observations": clean_text(row.get("Observaciones")),
+            "source_file": str(source.relative_to(ROOT)),
+            "active": True,
         }
 
 
@@ -220,11 +343,79 @@ def iter_fact_captacion_aw() -> Iterator[dict[str, Any]]:
         }
 
 
+def iter_fact_incidencias_flota() -> Iterator[dict[str, Any]]:
+    helpers = build_helpers()
+    frame, sources = helpers.read_incidencias_sources()
+    source_file = " + ".join(str(path.relative_to(ROOT)) for path in sources)
+    for _, row in frame.iterrows():
+        incident_date = clean_date(row.get("Fecha"))
+        area = helpers.clean_key(row.get("Area"))
+        vehicle_description = helpers.clean_key(row.get("Vehículo/maquinaria"))
+        if not incident_date and not area and not vehicle_description:
+            continue
+        yield {
+            "incident_date": incident_date,
+            "month_key": clean_month(row.get("Fecha")),
+            "year": clean_int(row.get("Año")),
+            "area": clean_text(area),
+            "center": clean_text(row.get("Centro")),
+            "vehicle_plate": helpers.extract_vehicle_plate(row.get("Vehículo/maquinaria")),
+            "vehicle_description": clean_text(vehicle_description),
+            "fuel": clean_text(row.get("Combustible")),
+            "provider": clean_text(row.get("Proveedor")),
+            "breakdown_type": clean_text(row.get("Tipo avería")),
+            "breakdown_subgroup": clean_text(row.get("subgrupo avería")),
+            "breakdown_subsubgroup": clean_text(row.get("Sub-subgrupo avería")),
+            "amount": clean_optional_float(row.get("Importe")),
+            "amount_without_vat": clean_optional_float(row.get("Importe sin IVA")),
+            "incident_code": clean_text(row.get("Código")),
+            "delivery_note": clean_text(row.get("Nº Albaran")),
+            "warranty": clean_text(row.get("Garantía")),
+            "warranty_end_date": clean_date(row.get("Fecha fin de garantia")),
+            "status": clean_text(row.get("Estado")),
+            "has_invoice": clean_text(row.get("¿Tiene facturas?")),
+            "framework_agreement": clean_text(row.get("Acuerdo marco")),
+            "lot": clean_text(row.get("Lote")),
+            "is_garbigunes_scope": "GARBIGUNES" in area.upper(),
+            "source_file": source_file,
+        }
+
+
+def iter_fact_refuerzos() -> Iterator[dict[str, Any]]:
+    helpers = build_helpers()
+    frame, sources = helpers.read_refuerzos_sources()
+    source_file = " + ".join(str(path.relative_to(ROOT)) for path in sources)
+    for _, row in frame.iterrows():
+        reinforcement_date = clean_date(row.get("Fecha"))
+        place = helpers.clean_key(row.get("Lugar"))
+        if not reinforcement_date and not place:
+            continue
+        year_value = clean_int(row.get("Año"))
+        if not year_value and reinforcement_date:
+            year_value = int(reinforcement_date[:4])
+        yield {
+            "reinforcement_date": reinforcement_date,
+            "month_key": clean_month(row.get("Fecha")),
+            "year": year_value,
+            "covered_by": clean_text(row.get("Cubierta por")),
+            "place": clean_text(place),
+            "reason": clean_text(row.get("Motivo")),
+            "author": clean_text(row.get("Autor registro")),
+            "notes": clean_text(row.get("Observaciones")),
+            "source_file": source_file,
+        }
+
+
 TABLE_LOADERS = {
     "dim_garbigunes": iter_dim_garbigunes,
+    "dim_flota": iter_dim_flota,
     "config_familias_aw": iter_config_familias_aw,
+    "config_quality_rules": iter_config_quality_rules,
+    "quality_aw_weight_anomalies": iter_quality_aw_weight_anomalies,
     "fact_salidas_transporte": iter_fact_salidas_transporte,
     "fact_captacion_aw": iter_fact_captacion_aw,
+    "fact_incidencias_flota": iter_fact_incidencias_flota,
+    "fact_refuerzos": iter_fact_refuerzos,
 }
 
 
