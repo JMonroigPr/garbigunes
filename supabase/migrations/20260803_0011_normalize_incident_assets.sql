@@ -18,6 +18,7 @@ select
   is_garbigunes_scope,
   count(*)::integer as incidents,
   sum(coalesce(amount, 0))::numeric(16, 2) as amount,
+  sum(coalesce(amount_without_vat, 0))::numeric(16, 2) as amount_without_vat,
   asset_code
 from analytics.fact_incidencias_flota
 group by month_key, area, center, vehicle_plate, provider, breakdown_type, breakdown_subgroup, is_garbigunes_scope, asset_code;
