@@ -276,14 +276,14 @@ def normalize_text(value: Any) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-SITE_ALIAS_CACHE: dict[str, str] | None = None
+SITE_ALIAS_CACHE: dict[str, dict[str, str]] | None = None
 
 
-def read_site_aliases() -> dict[str, str]:
+def read_site_aliases() -> dict[str, dict[str, str]]:
     global SITE_ALIAS_CACHE
     if SITE_ALIAS_CACHE is not None:
         return SITE_ALIAS_CACHE
-    aliases: dict[str, str] = {}
+    aliases: dict[str, dict[str, str]] = {}
     if SITE_ALIASES_INPUT.exists():
         frame = read_csv(SITE_ALIASES_INPUT)
         for _, row in frame.iterrows():
@@ -293,7 +293,10 @@ def read_site_aliases() -> dict[str, str]:
             raw_name = normalize_text(row.get("raw_name"))
             site_key = clean_key(row.get("site_key")).upper()
             if raw_name and site_key:
-                aliases[raw_name] = site_key
+                aliases[raw_name] = {
+                    "site_key": site_key,
+                    "site_type": clean_key(row.get("site_type")) or "fixed",
+                }
     SITE_ALIAS_CACHE = aliases
     return aliases
 
@@ -301,7 +304,21 @@ def read_site_aliases() -> dict[str, str]:
 def normalize_site(value: Any) -> str:
     text = normalize_text(value)
     text = re.sub(r"^GARBIGUNE\s+", "", text).strip()
-    return read_site_aliases().get(text, text)
+    alias = read_site_aliases().get(text)
+    return alias["site_key"] if alias else text
+
+
+def normalize_place(value: Any) -> dict[str, str]:
+    text = normalize_text(value)
+    alias = read_site_aliases().get(text)
+    if alias:
+        site_type = alias["site_type"]
+        site_key = alias["site_key"] if site_type == "fixed" else ""
+        return {"place_key": alias["site_key"], "place_type": site_type, "site_key": site_key}
+    if text.startswith("GARBIGUNE "):
+        site_key = normalize_site(text)
+        return {"place_key": site_key, "place_type": "fixed", "site_key": site_key}
+    return {"place_key": text, "place_type": "review", "site_key": ""}
 
 
 def month_label(value: Any) -> str:

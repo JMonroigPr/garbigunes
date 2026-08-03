@@ -67,6 +67,14 @@ supabase/migrations/20260803_0005_site_aliases.sql
 
 Esta migracion crea `analytics.config_site_aliases` y `analytics.v_site_alias_quality`.
 
+Para normalizar lugares de refuerzos, ejecutar:
+
+```text
+supabase/migrations/20260803_0006_refuerzos_place_keys.sql
+```
+
+Esta migracion anade `place_key`, `place_type` y `site_key` a `analytics.fact_refuerzos` y actualiza `analytics.v_refuerzos_monthly`.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -152,6 +160,8 @@ Cargar incidencias y refuerzos:
 ```bash
 python3 scripts/load_supabase_data.py --tables fact_incidencias_flota fact_refuerzos
 ```
+
+Si cambian `config_site_aliases`, recargar despues `fact_refuerzos` para actualizar `place_key`, `place_type` y `site_key`.
 
 Validar conteos despues de cargar:
 

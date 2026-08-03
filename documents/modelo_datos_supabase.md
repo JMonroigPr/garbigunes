@@ -161,10 +161,11 @@ Campos clave:
 
 - `reinforcement_date`, `month_key`, `year`
 - `covered_by`
-- `place`, `reason`
+- `place`, `place_key`, `place_type`, `site_key`
+- `reason`
 - `author`, `notes`
 
-Uso: presion de recursos y coberturas.
+Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, bases, móvil y otros puntos; `site_key` solo se informa cuando el lugar cruza con `analytics.dim_garbigunes`.
 
 ## Vistas genericas
 

@@ -410,6 +410,7 @@ def iter_fact_refuerzos() -> Iterator[dict[str, Any]]:
         place = helpers.clean_key(row.get("Lugar"))
         if not reinforcement_date and not place:
             continue
+        place_meta = helpers.normalize_place(place)
         year_value = clean_int(row.get("Año"))
         if not year_value and reinforcement_date:
             year_value = int(reinforcement_date[:4])
@@ -419,6 +420,9 @@ def iter_fact_refuerzos() -> Iterator[dict[str, Any]]:
             "year": year_value,
             "covered_by": clean_text(row.get("Cubierta por")),
             "place": clean_text(place),
+            "place_key": clean_text(place_meta["place_key"]),
+            "place_type": clean_text(place_meta["place_type"]),
+            "site_key": clean_text(place_meta["site_key"]),
             "reason": clean_text(row.get("Motivo")),
             "author": clean_text(row.get("Autor registro")),
             "notes": clean_text(row.get("Observaciones")),
