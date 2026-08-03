@@ -30,6 +30,7 @@ select
   max(f.brand) as brand,
   max(f.model) as model,
   max(f.fuel) as fuel,
+  max(f.center) as center,
   coalesce(sum(s.services), 0)::integer as services,
   coalesce(sum(s.kg), 0)::numeric(16, 3) as kg,
   coalesce(sum(i.incidents), 0)::integer as incidents,
