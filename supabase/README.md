@@ -115,6 +115,19 @@ supabase/migrations/20260803_0011_normalize_incident_assets.sql
 
 Esta migracion anade `asset_code` a `analytics.fact_incidencias_flota`, actualiza vistas de incidencias y evita que codigos internos tipo `C0392 - - -` se traten como matriculas.
 
+Para preparar acceso desde Vercel con `anon/publishable key`, ejecutar:
+
+```text
+supabase/migrations/20260803_0012_public_rls_policies.sql
+```
+
+Esta migracion activa RLS en tablas base, revoca lectura publica amplia y expone solo tablas de configuracion seguras y vistas agregadas sin conductores, matriculas ni respuestas de cliente:
+
+- `analytics.v_public_salidas_monthly`
+- `analytics.v_public_incidencias_monthly`
+- `analytics.v_public_refuerzos_monthly`
+- vistas AW agregadas y vistas de calidad no sensibles
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -154,6 +167,8 @@ scripts/load_supabase_data.py
 ```
 
 Necesita una clave `service_role`, no la `anon key`.
+
+La `anon/publishable key` solo debe usarse desde el navegador para leer las vistas publicas concedidas por `20260803_0012_public_rls_policies.sql`. No usarla para cargas ni para leer tablas `fact_*`.
 
 Crear un fichero local `.env.local` en la raiz del proyecto:
 

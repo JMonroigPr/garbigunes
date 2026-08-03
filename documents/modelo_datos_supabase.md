@@ -8,6 +8,7 @@ Este documento describe la capa analitica `analytics` del proyecto Garbigunes. E
 - Las tablas `config_*` contienen reglas o taxonomias editables.
 - Las tablas `quality_*` conservan incidencias de calidad para revision, sin borrar evidencias.
 - Las vistas `v_*` son agregados genericos de bajo acoplamiento: sirven para dashboards, QA y exploracion, pero no representan tarjetas concretas.
+- Las vistas `v_public_*` son la superficie recomendada para consultas desde Vercel con `anon/publishable key`: excluyen conductores, matriculas, codigos internos y respuestas de cliente.
 - Los ficheros pesados originales permanecen en `data/raw`; Supabase guarda datos limpios o agregados adecuados para consulta.
 
 ## Fuentes
@@ -217,11 +218,14 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 ## Vistas genericas
 
 - `analytics.v_salidas_monthly`: salidas por mes y dimensiones operativas.
+- `analytics.v_public_salidas_monthly`: salidas mensuales publicas sin conductor ni matricula.
 - `analytics.v_aw_monthly`: captacion AW por mes y dimensiones territoriales/residuo.
 - `analytics.v_aw_cp_flows`: flujos CP a Garbigune por mes y familia/subfamilia.
 - `analytics.v_incidencias_monthly`: incidencias por mes, vehiculo, proveedor y tipo de averia.
+- `analytics.v_public_incidencias_monthly`: incidencias mensuales publicas sin matricula ni codigo interno.
 - `analytics.v_incident_asset_code_quality`: control de incidencias con matricula, codigo interno o identificador no reconocido.
 - `analytics.v_refuerzos_monthly`: refuerzos por mes, lugar, motivo y persona.
+- `analytics.v_public_refuerzos_monthly`: refuerzos mensuales publicos sin persona que cubre el servicio.
 - `analytics.v_vehicle_monthly_context`: salidas e incidencias mensuales por vehiculo.
 - `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
 - `analytics.v_aw_weight_anomalies_review`: anomalias AW enriquecidas con correccion, `effective_kg` y estado efectivo de revision.
@@ -233,6 +237,17 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_etl_load_runs_table_counts`: historico de filas cargadas por tabla y ejecucion.
 
 Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas del dashboard final deberian crearse solo cuando se cierre el diseno del entregable.
+
+## Seguridad
+
+Las cargas usan `SUPABASE_SERVICE_ROLE_KEY` desde entorno local o secreto de servidor. Si el dashboard consulta Supabase directamente desde Vercel, debe usar solo `anon/publishable key` y limitarse a las relaciones publicas concedidas por `20260803_0012_public_rls_policies.sql`.
+
+La politica recomendada es:
+
+- tablas `fact_*`, `quality_*`, `etl_load_runs` y `dim_flota`: sin lectura directa desde navegador;
+- tablas de configuracion no sensibles y `dim_garbigunes`: lectura publica controlada;
+- vistas `v_public_*` y AW agregadas: lectura publica;
+- cualquier vista con conductores, matriculas, codigos internos o respuestas de cliente: solo para backend o `service_role`.
 
 ## Flujo recomendado
 

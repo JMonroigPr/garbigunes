@@ -31,11 +31,14 @@ DEFAULT_TABLES = (
 
 DEFAULT_VIEWS = (
     "v_salidas_monthly",
+    "v_public_salidas_monthly",
     "v_aw_monthly",
     "v_aw_cp_flows",
     "v_incidencias_monthly",
+    "v_public_incidencias_monthly",
     "v_incident_asset_code_quality",
     "v_refuerzos_monthly",
+    "v_public_refuerzos_monthly",
     "v_vehicle_monthly_context",
     "v_quality_summary",
     "v_aw_weight_anomalies_review",
