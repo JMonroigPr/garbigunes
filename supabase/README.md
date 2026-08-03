@@ -28,6 +28,14 @@ La migración crea el esquema `analytics` y estas tablas:
 - `analytics.dim_garbigunes`
 - `analytics.config_familias_aw`
 
+Despues ejecutar tambien:
+
+```text
+supabase/migrations/20260803_0002_grant_analytics_api_permissions.sql
+```
+
+Esta segunda migracion concede permisos al rol `service_role` para poder cargar datos por la API REST.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -91,4 +99,14 @@ Por defecto, cada tabla se borra antes de recargarse. Para anadir filas sin borr
 
 ```bash
 python3 scripts/load_supabase_data.py --tables fact_salidas_transporte --skip-delete
+```
+
+## Errores frecuentes
+
+Si aparece `Invalid schema: analytics`, falta exponer `analytics` en `Project Settings > API > Data API Settings > Exposed schemas`.
+
+Si aparece `permission denied for schema analytics`, ejecutar en SQL Editor:
+
+```text
+supabase/migrations/20260803_0002_grant_analytics_api_permissions.sql
 ```
