@@ -30,6 +30,8 @@ RECORDS_SCRIPT_OUTPUT = ROOT / "dashboard" / "dashboard_records.js"
 CAPTURE_GEOJSON_OUTPUT = ROOT / "dashboard" / "bizkaia_codigos_postales.geojson"
 AW_AGGREGATES_OUTPUT = ROOT / "dashboard" / "aw_capture_aggregates.json.gz"
 AW_MAX_ENTRY_KG = 50_000
+AW_ANOMALIES_OUTPUT = ROOT / "data" / "processed" / "quality" / "aw_weight_anomalies.csv"
+AW_ANOMALIES_DASHBOARD_OUTPUT = ROOT / "dashboard" / "aw_weight_anomalies.csv"
 def config_path(domain: str, key: str, fallback: Path) -> Path:
     value = DATA_SOURCES.get(domain, {}).get(key)
     return ROOT / value if value else fallback
@@ -530,6 +532,7 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
     anomalous_weight_rows = 0
     anomalous_weight_kg = 0.0
     anomalous_weight_examples: list[dict[str, Any]] = []
+    anomalous_weight_records: list[dict[str, Any]] = []
     raw_columns: set[str] = set()
     first_date: pd.Timestamp | None = None
     last_date: pd.Timestamp | None = None
@@ -549,7 +552,7 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
                 skipped_rows += max((sheet.max_row or 1) - 1, 0)
                 continue
 
-            for row in rows:
+            for row_number, row in enumerate(rows, start=2):
                 total_rows += 1
                 get = lambda name: row[index[name]] if name in index and index[name] < len(row) else None
                 parsed_date = parse_single_date(get(date_col))
@@ -557,36 +560,64 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
                 if parsed_date is None or pd.isna(kg):
                     skipped_rows += 1
                     continue
-                if kg < 0 or kg > AW_MAX_ENTRY_KG:
-                    skipped_rows += 1
-                    anomalous_weight_rows += 1
-                    anomalous_weight_kg += float(kg)
-                    if len(anomalous_weight_examples) < 10:
-                        site = clean_key(get("Garbigune")).upper()
-                        waste = clean_key(get("Residuo")).upper()
-                        anomalous_weight_examples.append(
-                            {
-                                "date": str(parsed_date.date()),
-                                "site": site,
-                                "waste": waste,
-                                "cp": format_cp(get("C.P.")),
-                                "unit": clean_key(get("Unidad")),
-                                "kg": safe_num(kg, 2),
-                                "sourceSheet": sheet.title,
-                            }
-                        )
-                    continue
-                if first_date is None or parsed_date < first_date:
-                    first_date = parsed_date
-                if last_date is None or parsed_date > last_date:
-                    last_date = parsed_date
-
                 site = clean_key(get("Garbigune")).upper()
                 site_key = normalize_site(site)
                 waste = clean_key(get("Residuo")).upper()
                 family = family_map.get(waste, {}).get("family", "SIN FAMILIA")
                 subfamily = family_map.get(waste, {}).get("subfamily", "SIN SUBFAMILIA")
                 cp = format_cp(get("C.P."))
+                unit = clean_key(get("Unidad"))
+                user_type = clean_key(get("Tipo Usuario"))
+                origin_municipality = clean_key(get("Municipio origen"))
+                account_municipality = clean_key(get("Municipio cuenta"))
+                original_kg = float(kg)
+                valid_kg = original_kg
+                is_anomalous_weight = original_kg < 0 or original_kg > AW_MAX_ENTRY_KG
+                if kg < 0 or kg > AW_MAX_ENTRY_KG:
+                    anomalous_weight_rows += 1
+                    anomalous_weight_kg += original_kg
+                    valid_kg = 0.0
+                    anomaly = {
+                        "source_file": str(source.relative_to(ROOT)),
+                        "source_sheet": sheet.title,
+                        "source_row": int(row_number),
+                        "fecha": str(parsed_date.date()),
+                        "garbigune": site,
+                        "site_key": site_key,
+                        "residuo_aw": waste,
+                        "familia_aw": family,
+                        "subfamilia_aw": subfamily,
+                        "tipo_usuario": user_type,
+                        "municipio_origen": origin_municipality,
+                        "municipio_cuenta": account_municipality,
+                        "cp": cp,
+                        "unidad": unit,
+                        "peso_original_kg": safe_num(original_kg, 2),
+                        "peso_validado_kg": 0.0,
+                        "umbral_kg": int(AW_MAX_ENTRY_KG),
+                        "motivo": f"Peso individual negativo o superior a {AW_MAX_ENTRY_KG:,} kg",
+                        "pregunta_cliente": "Confirmar si el peso es correcto o si corresponde a un error de captura, separador decimal/miles, unidad o medición.",
+                        "accion_propuesta": "Mantener la entrada para conteos, excluir temporalmente el peso de toneladas hasta confirmación.",
+                    }
+                    anomalous_weight_records.append(anomaly)
+                    if len(anomalous_weight_examples) < 10:
+                        anomalous_weight_examples.append(
+                            {
+                                "date": anomaly["fecha"],
+                                "site": site,
+                                "waste": waste,
+                                "cp": cp,
+                                "unit": unit,
+                                "kg": anomaly["peso_original_kg"],
+                                "sourceSheet": sheet.title,
+                                "sourceRow": int(row_number),
+                            }
+                        )
+                if first_date is None or parsed_date < first_date:
+                    first_date = parsed_date
+                if last_date is None or parsed_date > last_date:
+                    last_date = parsed_date
+
                 month = month_label(parsed_date)
                 key = (
                     month,
@@ -596,9 +627,9 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
                     waste,
                     family,
                     subfamily,
-                    clean_key(get("Tipo Usuario")),
+                    user_type,
                     cp,
-                    clean_key(get("Unidad")),
+                    unit,
                     "1" if site_key in location_keys else "0",
                 )
                 if key not in aggregates:
@@ -619,26 +650,65 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
                         "kg": 0.0,
                         "rows": 0,
                         "entries": 0,
+                        "anomalous_weight_rows": 0,
+                        "anomalous_weight_kg": 0.0,
                         "_origin_counts": Counter(),
                         "_account_counts": Counter(),
                     }
                 item = aggregates[key]
-                item["kg"] += float(kg)
+                item["kg"] += valid_kg
                 item["rows"] += 1
                 item["entries"] += 1
-                item["_origin_counts"][clean_key(get("Municipio origen"))] += 1
-                item["_account_counts"][clean_key(get("Municipio cuenta"))] += 1
+                if is_anomalous_weight:
+                    item["anomalous_weight_rows"] += 1
+                    item["anomalous_weight_kg"] += original_kg
+                item["_origin_counts"][origin_municipality] += 1
+                item["_account_counts"][account_municipality] += 1
     finally:
         workbook.close()
 
     records = list(aggregates.values())
     for item in records:
         item["kg"] = safe_num(item["kg"], 2)
+        item["anomalous_weight_kg"] = safe_num(item["anomalous_weight_kg"], 2)
         origin_counts = item.pop("_origin_counts")
         account_counts = item.pop("_account_counts")
         item["origin_municipality"] = origin_counts.most_common(1)[0][0] if origin_counts else ""
         item["account_municipality"] = account_counts.most_common(1)[0][0] if account_counts else ""
     records.sort(key=lambda item: (item["date"], item["site"], item["cp"], item["waste"]))
+
+    AW_ANOMALIES_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    AW_ANOMALIES_DASHBOARD_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    anomaly_frame = pd.DataFrame(anomalous_weight_records)
+    anomaly_columns = [
+        "source_file",
+        "source_sheet",
+        "source_row",
+        "fecha",
+        "garbigune",
+        "site_key",
+        "residuo_aw",
+        "familia_aw",
+        "subfamilia_aw",
+        "tipo_usuario",
+        "municipio_origen",
+        "municipio_cuenta",
+        "cp",
+        "unidad",
+        "peso_original_kg",
+        "peso_validado_kg",
+        "umbral_kg",
+        "motivo",
+        "pregunta_cliente",
+        "accion_propuesta",
+    ]
+    if anomaly_frame.empty:
+        anomaly_frame = pd.DataFrame(columns=anomaly_columns)
+    else:
+        anomaly_frame = anomaly_frame.loc[:, anomaly_columns].sort_values(["fecha", "garbigune", "residuo_aw", "source_row"])
+    anomaly_frame.to_csv(AW_ANOMALIES_OUTPUT, index=False, encoding="utf-8-sig")
+    anomaly_frame.to_csv(AW_ANOMALIES_DASHBOARD_OUTPUT, index=False, encoding="utf-8-sig")
+
     return records, {
         "rawRowsRead": int(total_rows),
         "skippedRows": int(skipped_rows),
@@ -646,6 +716,8 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
         "anomalousWeightKg": safe_num(anomalous_weight_kg, 2),
         "anomalousWeightMaxKg": int(AW_MAX_ENTRY_KG),
         "anomalousWeightExamples": anomalous_weight_examples,
+        "anomalousWeightFile": str(AW_ANOMALIES_OUTPUT.relative_to(ROOT)),
+        "anomalousWeightDashboardFile": AW_ANOMALIES_DASHBOARD_OUTPUT.name,
         "sourceColumns": sorted(raw_columns),
         "from": str(first_date.date()) if first_date is not None else "",
         "to": str(last_date.date()) if last_date is not None else "",
@@ -815,6 +887,8 @@ def build_capture_data() -> dict[str, Any]:
             "anomalousWeightKg": safe_num(source_meta["anomalousWeightKg"], 2),
             "anomalousWeightMaxKg": int(source_meta["anomalousWeightMaxKg"]),
             "anomalousWeightExamples": source_meta["anomalousWeightExamples"],
+            "anomalousWeightFile": source_meta["anomalousWeightFile"],
+            "anomalousWeightDashboardFile": source_meta["anomalousWeightDashboardFile"],
             "aggregateFile": AW_AGGREGATES_OUTPUT.name,
             "entryMetricMethod": aggregate_payload["entryMetricMethod"],
             "timeFilterNote": aggregate_payload["timeFilterNote"],
@@ -1174,7 +1248,7 @@ def build() -> dict[str, Any]:
             "status": "warning" if capture["meta"]["anomalousWeightRows"] else "ok",
             "value": int(capture["meta"]["anomalousWeightRows"]),
             "share": percentage(capture["meta"]["anomalousWeightRows"], capture["meta"]["rawRowsRead"]),
-            "detail": f"Se excluyen entradas AW con peso negativo o superior a {capture['meta']['anomalousWeightMaxKg']:,} kg por línea. Peso bruto excluido: {capture['meta']['anomalousWeightKg']:,.0f} kg.",
+            "detail": f"Las entradas AW con peso negativo o superior a {capture['meta']['anomalousWeightMaxKg']:,} kg se mantienen en conteos, pero su peso queda en cuarentena hasta confirmación. CSV: {capture['meta']['anomalousWeightFile']}. Peso bruto en revisión: {capture['meta']['anomalousWeightKg']:,.0f} kg.",
         },
         {
             "check": "Residuos AW con familia",
