@@ -89,7 +89,25 @@ Crear un script de carga desde los ficheros locales hacia Supabase usando la con
 
 ## Cargar datos
 
-El script de carga es:
+El flujo recomendado es usar el pipeline completo:
+
+```bash
+python3 scripts/run_data_pipeline.py
+```
+
+Este comando ejecuta build, carga Supabase y validacion, y guarda logs en:
+
+```text
+data/processed/pipeline_logs/
+```
+
+Para probar sin cargar Supabase:
+
+```bash
+python3 scripts/run_data_pipeline.py --load-dry-run --skip-validate
+```
+
+El script de carga individual sigue disponible:
 
 ```text
 scripts/load_supabase_data.py

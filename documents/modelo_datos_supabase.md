@@ -209,10 +209,12 @@ Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas
 3. Cargar Supabase:
 
 ```bash
-/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/load_supabase_data.py
+/Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/run_data_pipeline.py
 ```
 
-4. Validar:
+El pipeline ejecuta build, carga y validacion, y guarda logs en `data/processed/pipeline_logs/`.
+
+4. Si se quiere validar manualmente:
 
 ```bash
 /Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/validate_supabase_load.py
