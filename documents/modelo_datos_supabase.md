@@ -106,6 +106,22 @@ Campos clave:
 
 Uso: comparar entradas AW y salidas transportadas por familias de residuo sin hardcodear la relacion en Python ni en el frontend. Un residuo de salida puede mapear a varias familias AW; `family_rank` conserva el orden/criterio del CSV editable.
 
+### `analytics.etl_load_runs`
+
+Grano: una ejecucion del pipeline local de datos.
+
+Campos clave:
+
+- `run_id`, `started_at`, `finished_at`, `status`
+- `tables_requested`
+- `load_counts`
+- `validation`
+- `coverage`, `active_sources`, `source_files`
+- `log_json_path`, `log_markdown_path`
+- `error_message`
+
+Uso: trazabilidad de cargas. Permite saber que fuentes se usaron, cuantas filas se cargaron por tabla y si la validacion post-carga termino correctamente. Los logs completos permanecen en `data/processed/pipeline_logs/`; Supabase conserva el resumen consultable.
+
 ## Nuevas tablas de calidad y recursos
 
 ### `analytics.config_quality_rules`
@@ -194,6 +210,8 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_salidas_aw_family_monthly`: salidas transportadas agregadas por familia AW equivalente.
 - `analytics.v_aw_vs_salidas_family_monthly`: comparativa mensual generica AW vs salidas por `site_key` y familia AW.
 - `analytics.v_residuos_salida_aw_equivalence_quality`: cobertura de residuos de salida en la tabla de equivalencias.
+- `analytics.v_etl_load_runs_latest`: ultimas ejecuciones del pipeline con fuentes, estado y rutas de logs.
+- `analytics.v_etl_load_runs_table_counts`: historico de filas cargadas por tabla y ejecucion.
 
 Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas del dashboard final deberian crearse solo cuando se cierre el diseno del entregable.
 
@@ -213,6 +231,7 @@ Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas
 ```
 
 El pipeline ejecuta build, carga y validacion, y guarda logs en `data/processed/pipeline_logs/`.
+Tambien inserta un resumen auditable en `analytics.etl_load_runs`.
 
 4. Si se quiere validar manualmente:
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -9,6 +10,9 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+import urllib.error
+import urllib.parse
+import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,13 +33,24 @@ DEFAULT_TABLES = (
 
 
 def now_iso() -> str:
-    return datetime.now().isoformat(timespec="seconds")
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def read_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
 def read_dashboard_metadata() -> dict[str, Any]:
@@ -112,6 +127,83 @@ def parse_validation(output: str) -> list[dict[str, Any]]:
     return rows
 
 
+def step_status(payload: dict[str, Any], step_name: str) -> str | None:
+    for step in payload.get("steps", []):
+        if step.get("name") == step_name:
+            return step.get("status")
+    return None
+
+
+def first_error_message(payload: dict[str, Any]) -> str | None:
+    for step in payload.get("steps", []):
+        if step.get("status") != "error":
+            continue
+        text = "\n".join(part.strip() for part in (step.get("stderr"), step.get("stdout")) if part and part.strip())
+        return text[:4000] if text else f"{step.get('name')} failed with return code {step.get('returncode')}"
+    return None
+
+
+def register_etl_run(payload: dict[str, Any], args: argparse.Namespace, json_path: Path, md_path: Path) -> dict[str, Any]:
+    read_env_file(ROOT / args.env_file)
+    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    if not supabase_url or not service_key:
+        return {
+            "status": "error",
+            "message": "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Use --skip-register for local-only runs.",
+        }
+
+    metadata = payload.get("dashboardMetadata", {})
+    row = {
+        "run_id": payload["runId"],
+        "started_at": payload["startedAt"],
+        "finished_at": payload["finishedAt"],
+        "status": payload["status"],
+        "elapsed_seconds": payload["elapsedSeconds"],
+        "schema_name": args.schema,
+        "tables_requested": args.tables,
+        "load_dry_run": args.load_dry_run,
+        "skip_build": args.skip_build,
+        "skip_load": args.skip_load,
+        "skip_validate": args.skip_validate,
+        "build_status": step_status(payload, "build_dashboard_data"),
+        "load_status": step_status(payload, "load_supabase_data"),
+        "validate_status": step_status(payload, "validate_supabase_load"),
+        "load_counts": payload.get("loadCounts", {}),
+        "validation": payload.get("validation", []),
+        "coverage": metadata.get("coverage", {}),
+        "active_sources": metadata.get("activeSources", {}),
+        "source_files": metadata.get("sourceFiles", []),
+        "data_sources": payload.get("dataSources", {}),
+        "log_json_path": str(json_path.relative_to(ROOT)),
+        "log_markdown_path": str(md_path.relative_to(ROOT)),
+        "error_message": first_error_message(payload),
+    }
+
+    endpoint = f"{supabase_url}/rest/v1/etl_load_runs?{urllib.parse.urlencode({'on_conflict': 'run_id'})}"
+    request = urllib.request.Request(
+        endpoint,
+        data=json.dumps(row, ensure_ascii=False).encode("utf-8"),
+        method="POST",
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Content-Profile": args.schema,
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return {"status": "ok", "httpStatus": response.status}
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        return {"status": "error", "httpStatus": exc.code, "message": body}
+    except urllib.error.URLError as exc:
+        return {"status": "error", "message": str(exc)}
+
+
 def write_markdown(log_path: Path, payload: dict[str, Any]) -> None:
     lines = [
         f"# Pipeline run {payload['runId']}",
@@ -172,6 +264,16 @@ def write_markdown(log_path: Path, payload: dict[str, Any]) -> None:
             lines.append(f"- `{key}`: {value}")
         lines.append("")
 
+    if payload.get("registration"):
+        lines.extend(["## Supabase Run Log", ""])
+        registration = payload["registration"]
+        lines.append(f"- Status: `{registration.get('status')}`")
+        if registration.get("httpStatus"):
+            lines.append(f"- HTTP status: `{registration['httpStatus']}`")
+        if registration.get("message"):
+            lines.append(f"- Message: `{registration['message']}`")
+        lines.append("")
+
     log_path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 
@@ -185,6 +287,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--skip-load", action="store_true")
     parser.add_argument("--skip-validate", action="store_true")
+    parser.add_argument("--skip-register", action="store_true", help="Do not insert the pipeline run into Supabase etl_load_runs.")
     parser.add_argument("--load-dry-run", action="store_true", help="Run load_supabase_data.py with --dry-run.")
     return parser.parse_args()
 
@@ -208,6 +311,7 @@ def main() -> int:
         "validation": [],
         "dashboardMetadata": {},
         "dataSources": load_json(ROOT / "config" / "data_sources.json"),
+        "registration": None,
     }
 
     python = sys.executable
@@ -269,9 +373,24 @@ def main() -> int:
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     write_markdown(md_path, payload)
 
+    if not args.skip_register:
+        registration = register_etl_run(payload, args, json_path, md_path)
+        payload["registration"] = registration
+        if registration.get("status") != "ok":
+            payload["status"] = "error"
+            status = "error"
+        json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_markdown(md_path, payload)
+
     print(f"Pipeline status: {status}")
     print(f"JSON log: {json_path.relative_to(ROOT)}")
     print(f"Markdown log: {md_path.relative_to(ROOT)}")
+    if payload.get("registration"):
+        registration = payload["registration"]
+        if registration.get("status") == "ok":
+            print("Supabase run log: inserted into analytics.etl_load_runs")
+        else:
+            print(f"Supabase run log: error {registration.get('message', '')}")
     return 0 if status == "ok" else 1
 
 

@@ -83,6 +83,14 @@ supabase/migrations/20260803_0007_waste_aw_equivalences.sql
 
 Esta migracion crea `analytics.config_residuos_salida_aw_equivalencias` y vistas genericas para salidas por familia AW y comparativa AW vs salidas.
 
+Para registrar ejecuciones del pipeline de datos, ejecutar:
+
+```text
+supabase/migrations/20260803_0008_etl_load_runs.sql
+```
+
+Esta migracion crea `analytics.etl_load_runs` y las vistas `analytics.v_etl_load_runs_latest` y `analytics.v_etl_load_runs_table_counts`.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -101,10 +109,18 @@ Este comando ejecuta build, carga Supabase y validacion, y guarda logs en:
 data/processed/pipeline_logs/
 ```
 
+Tambien registra un resumen de la ejecucion en `analytics.etl_load_runs`: fuentes activas, ficheros fuente, tablas solicitadas, filas cargadas, resultado de validacion y rutas de los logs locales.
+
 Para probar sin cargar Supabase:
 
 ```bash
 python3 scripts/run_data_pipeline.py --load-dry-run --skip-validate
+```
+
+Para probar completamente en local sin registrar la ejecucion en Supabase:
+
+```bash
+python3 scripts/run_data_pipeline.py --skip-build --load-dry-run --skip-validate --skip-register
 ```
 
 El script de carga individual sigue disponible:
