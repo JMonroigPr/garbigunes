@@ -77,6 +77,19 @@ Probar transformaciones sin conectar:
 python3 scripts/load_supabase_data.py --dry-run
 ```
 
+Los facts se cargan desde los artefactos generados en `dashboard/`. Antes de cargar salidas o captacion AW, regenerar el dashboard si han cambiado las fuentes:
+
+```bash
+python3 scripts/build_dashboard_data.py
+```
+
+La politica actual de fuentes es:
+
+- historico principal desde `input_data`;
+- actualizaciones parciales desde `input_data/datos_actualizados`;
+- en ventanas temporales solapadas se prioriza `datos_actualizados`;
+- Captacion AW mantiene `Registro detalles residuos_2026-2018.xlsx` porque conserva `C.P.` y municipio origen.
+
 Cargar dimensiones/configuracion:
 
 ```bash

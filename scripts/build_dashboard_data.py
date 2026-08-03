@@ -19,6 +19,7 @@ from docx import Document
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = ROOT / "input_data"
+UPDATED_INPUT = INPUT / "datos_actualizados"
 OUTPUT = ROOT / "dashboard" / "dashboard_data.js"
 QUALITY_OUTPUT = ROOT / "dashboard" / "data_quality_report.json"
 RECORDS_OUTPUT = ROOT / "dashboard" / "dashboard_records.json.gz"
@@ -29,6 +30,31 @@ AW_FAMILIES_INPUT = INPUT / "residuos_aw_familias.csv"
 AW_EQUIVALENCES_INPUT = INPUT / "residuos_salida_aw_equivalencias.csv"
 AW_HISTORICAL_INPUT = INPUT / "Registro detalles residuos_2026-2018.xlsx"
 AW_SAMPLE_INPUT = INPUT / "AST_AW_Ejemplo_Registro detalles residuos.xlsx"
+
+PESADAS_MAIN_INPUT = INPUT / "AST_Pesadas_Garbigunes_2023-YTD_enviar.ods"
+PESADAS_UPDATED_INPUTS = [
+    UPDATED_INPUT / "3. Transportes-pesadas" / "AST_Pesadas_Garbigunes_2025.ods",
+    UPDATED_INPUT / "3. Transportes-pesadas" / "AST_Pesadas_Garbigunes_2026-YTD.ods",
+]
+INCIDENCIAS_MAIN_INPUT = INPUT / "AST_2022-2026YTD_Incidencias_Vehículos.ods"
+INCIDENCIAS_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_2025-202606_Incidencias_Vehículos.ods"
+FLOTA_INPUT = INPUT / "AST_20260624_Flota.ods"
+FLOTA_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_202606_Flota.ods"
+GNC_INPUT = INPUT / "AST_20260624_Estaciones de servicio GNC.ods"
+GNC_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_20260630_Estaciones de servicio GNC.ods"
+TALLERES_INPUT = INPUT / "AST_20260624_Talleres.ods"
+TALLERES_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_202606_Talleres.ods"
+RUTAS_INPUT = INPUT / "AST_20260625_Rutas_transporte_garbigunes.ods"
+RUTAS_UPDATED_INPUT = UPDATED_INPUT / "6. Garbigunes rutas" / "AST_20260625_Rutas_transporte_garbigunes.ods"
+REFUERZOS_MAIN_INPUT = INPUT / "AST_Refuerzos-TRANSPORTE GARBIGUNE.xlsx"
+REFUERZOS_UPDATED_INPUTS = [
+    UPDATED_INPUT / "0. Refuerzos" / "Refuerzos-2025bis_Solo_GAR.xlsx",
+    UPDATED_INPUT / "0. Refuerzos" / "Refuerzos-2026bis_solo_GAR.xlsx",
+]
+MOVIL_MAIN_INPUT = INPUT / "AST_GarbigunesMovil-Todos.xlsx"
+MOVIL_UPDATED_INPUT = UPDATED_INPUT / "4. Transportes garbigune móvil" / "GarbigunesMovil-Todos.xlsx"
+COBERTURAS_UPDATED_INPUT = UPDATED_INPUT / "1.Coberturas" / "Coberturas-solo_GAR.xlsx"
+AW_UPDATED_INPUT = UPDATED_INPUT / "2. Entradas garbigunes" / "DetallesEntradasGarbiker.xlsx"
 
 ODS_NS = {
     "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
@@ -110,6 +136,14 @@ def read_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, dtype=str)
 
 
+def existing_paths(paths: list[Path]) -> list[Path]:
+    return [path for path in paths if path.exists()]
+
+
+def source_label(paths: list[Path]) -> str:
+    return " + ".join(str(path.relative_to(INPUT)) for path in paths)
+
+
 def parse_dates(series: pd.Series) -> pd.Series:
     return pd.to_datetime(series, errors="coerce", dayfirst=True)
 
@@ -123,6 +157,75 @@ def parse_number(series: pd.Series) -> pd.Series:
     plain_numeric = pd.to_numeric(text.str.replace(",", ".", regex=False), errors="coerce")
     numeric = fallback.where(fallback.notna(), plain_numeric)
     return numeric.where(~has_comma, euro_numeric).where(lambda values: values.notna(), fallback)
+
+
+def combine_with_updated(main: pd.DataFrame, updated_frames: list[pd.DataFrame], key_columns: list[str]) -> pd.DataFrame:
+    frames = [frame.copy() for frame in updated_frames if not frame.empty]
+    if not frames:
+        return main.copy()
+    updated = pd.concat(frames, ignore_index=True)
+    if main.empty:
+        return updated
+
+    main_clean = main.copy()
+    key_frame = updated[key_columns].drop_duplicates()
+    key_frame["_updated_source_row"] = True
+    merged = main_clean.merge(key_frame, on=key_columns, how="left")
+    main_keep = main_clean.loc[merged["_updated_source_row"].isna().to_numpy()]
+    return pd.concat([main_keep, updated], ignore_index=True)
+
+
+def combine_with_updated_date_windows(main: pd.DataFrame, updated_frames: list[pd.DataFrame], date_column: str) -> pd.DataFrame:
+    frames = [frame.copy() for frame in updated_frames if not frame.empty]
+    if not frames:
+        return main.copy()
+    if main.empty:
+        return pd.concat(frames, ignore_index=True)
+
+    main_clean = main.copy()
+    main_dates = parse_dates(main_clean[date_column])
+    keep = pd.Series(True, index=main_clean.index)
+    for frame in frames:
+        dates = parse_dates(frame[date_column])
+        if dates.notna().any():
+            keep &= ~(main_dates.ge(dates.min()) & main_dates.le(dates.max()))
+    return pd.concat([main_clean.loc[keep], *frames], ignore_index=True)
+
+
+def read_pesadas_sources() -> tuple[pd.DataFrame, list[Path]]:
+    main = read_ods(PESADAS_MAIN_INPUT)
+    updated_paths = existing_paths(PESADAS_UPDATED_INPUTS)
+    updated_frames = [read_ods(path) for path in updated_paths]
+    combined = combine_with_updated_date_windows(main, updated_frames, "Fecha")
+    return combined, [PESADAS_MAIN_INPUT, *updated_paths]
+
+
+def read_incidencias_sources() -> tuple[pd.DataFrame, list[Path]]:
+    main = read_ods(INCIDENCIAS_MAIN_INPUT)
+    updated_paths = [INCIDENCIAS_UPDATED_INPUT] if INCIDENCIAS_UPDATED_INPUT.exists() else []
+    updated_frames = [read_ods(path) for path in updated_paths]
+    combined = combine_with_updated_date_windows(main, updated_frames, "Fecha")
+    return combined, [INCIDENCIAS_MAIN_INPUT, *updated_paths]
+
+
+def read_refuerzos_sources() -> tuple[pd.DataFrame, list[Path]]:
+    main = read_xlsx(REFUERZOS_MAIN_INPUT)
+    updated_paths = existing_paths(REFUERZOS_UPDATED_INPUTS)
+    updated_frames = [read_xlsx(path) for path in updated_paths]
+    combined = combine_with_updated_date_windows(main, updated_frames, "Fecha")
+    return combined, [REFUERZOS_MAIN_INPUT, *updated_paths]
+
+
+def read_movil_sources() -> tuple[pd.DataFrame, list[Path]]:
+    main = read_xlsx(MOVIL_MAIN_INPUT)
+    updated_paths = [MOVIL_UPDATED_INPUT] if MOVIL_UPDATED_INPUT.exists() else []
+    updated_frames = [read_xlsx(path) for path in updated_paths]
+    combined = combine_with_updated_date_windows(main, updated_frames, "Fecha")
+    return combined, [MOVIL_MAIN_INPUT, *updated_paths]
+
+
+def preferred_existing(primary: Path, fallback: Path) -> Path:
+    return primary if primary.exists() else fallback
 
 
 def parse_number_value(value: Any) -> float | None:
@@ -710,7 +813,7 @@ def extract_vehicle_plate(value: Any) -> str:
 
 
 def read_routes() -> dict[str, Any]:
-    path = INPUT / "AST_20260625_Rutas_transporte_garbigunes.ods"
+    path = preferred_existing(RUTAS_UPDATED_INPUT, RUTAS_INPUT)
     vehicle_routes = read_ods(path, "Vehículos_-_Ruta")
     site_routes = read_ods(path, "Garbigune_-_Ruta")
     base_addresses = read_ods(path, "Base_-_Dirección")
@@ -836,7 +939,7 @@ def build() -> dict[str, Any]:
     routes = read_routes()
     convenios = read_convenios()
 
-    pesadas = read_ods(INPUT / "AST_Pesadas_Garbigunes_2023-YTD_enviar.ods")
+    pesadas, pesadas_sources = read_pesadas_sources()
     pesadas["date"] = parse_dates(pesadas["Fecha"])
     pesadas["month"] = pesadas["date"].map(month_label)
     pesadas["weight_kg"] = parse_number(pesadas["PESO KG"])
@@ -853,13 +956,14 @@ def build() -> dict[str, Any]:
 
     capture = build_capture_data()
 
-    flota = read_ods(INPUT / "AST_20260624_Flota.ods")
+    flota_source = preferred_existing(FLOTA_UPDATED_INPUT, FLOTA_INPUT)
+    flota = read_ods(flota_source)
     flota["plate"] = flota["Matrícula"].map(clean_key)
     flota["fuel"] = flota["COMBUSTIBLE"].map(clean_key)
     flota["registered"] = parse_dates(flota["Fecha matriculación"])
     flota["age_years"] = ((pd.Timestamp.today().normalize() - flota["registered"]).dt.days / 365.25).round(1)
 
-    incidencias = read_ods(INPUT / "AST_2022-2026YTD_Incidencias_Vehículos.ods")
+    incidencias, incidencias_sources = read_incidencias_sources()
     incidencias = incidencias[incidencias["Area"].map(clean_key).str.upper().str.contains("GARBIGUNES", na=False)].copy()
     incidencias["date"] = parse_dates(incidencias["Fecha"])
     incidencias["month"] = incidencias["date"].map(month_label)
@@ -869,12 +973,12 @@ def build() -> dict[str, Any]:
     )
     incidencias_records["date"] = incidencias_records["date"].dt.strftime("%Y-%m-%d")
 
-    refuerzos = read_xlsx(INPUT / "AST_Refuerzos-TRANSPORTE GARBIGUNE.xlsx")
+    refuerzos, refuerzos_sources = read_refuerzos_sources()
     refuerzos["date"] = parse_dates(refuerzos["Fecha"])
     refuerzos["month"] = refuerzos["date"].map(month_label)
     refuerzos["place"] = refuerzos["Lugar"].map(clean_key)
 
-    movil = read_xlsx(INPUT / "AST_GarbigunesMovil-Todos.xlsx")
+    movil, movil_sources = read_movil_sources()
     movil["date"] = parse_dates(movil["Fecha"])
     movil["vehicle"] = movil["Matrícula"].map(clean_key)
     mobile_resources = build_mobile_resources(movil)
@@ -1039,15 +1143,18 @@ def build() -> dict[str, Any]:
 
     return {
         "generatedAt": datetime.now().isoformat(timespec="seconds"),
-        "sourceFiles": sorted(path.name for path in INPUT.iterdir() if not path.name.startswith("~$")),
+        "sourceFiles": sorted(str(path.relative_to(INPUT)) for path in INPUT.rglob("*") if path.is_file() and not path.name.startswith("~$") and path.name != ".DS_Store"),
         "activeSources": {
-            "pesadas": "AST_Pesadas_Garbigunes_2023-YTD_enviar.ods",
-            "incidencias": "AST_2022-2026YTD_Incidencias_Vehículos.ods",
-            "flota": "AST_20260624_Flota.ods",
-            "rutas": "AST_20260625_Rutas_transporte_garbigunes.ods",
+            "policy": "Histórico principal + actualización parcial desde datos_actualizados; en solapes se prioriza datos_actualizados.",
+            "pesadas": source_label(pesadas_sources),
+            "incidencias": source_label(incidencias_sources),
+            "flota": str(flota_source.relative_to(INPUT)),
+            "rutas": str(preferred_existing(RUTAS_UPDATED_INPUT, RUTAS_INPUT).relative_to(INPUT)),
             "convenios": "2026_Ayuntamientos_Conveniados_Garbigunes.ods",
-            "movil": "AST_GarbigunesMovil-Todos.xlsx",
+            "movil": source_label(movil_sources),
+            "refuerzos": source_label(refuerzos_sources),
             "captacionAw": capture["meta"]["source"],
+            "captacionAwPolicy": "Se mantiene la fuente histórica principal porque conserva C.P. y municipio origen; DetallesEntradasGarbiker.xlsx no sustituye esa información para el análisis de captación.",
             "familiasAw": "residuos_aw_familias.csv",
             "equivalenciasAw": AW_EQUIVALENCES_INPUT.name,
             "garbiguneLocations": "garbigunes_ubicaciones.csv",
@@ -1077,8 +1184,8 @@ def build() -> dict[str, Any]:
             "pesadasTo": str(pesadas["date"].max().date()),
             "incidenciasFrom": str(incidencias["date"].min().date()),
             "incidenciasTo": str(incidencias["date"].max().date()),
-            "incidenciasSource": "AST_2022-2026YTD_Incidencias_Vehículos.ods",
-            "flotaAsOf": "2026-06-24",
+            "incidenciasSource": source_label(incidencias_sources),
+            "flotaAsOf": "2026-06",
             "refuerzosFrom": str(refuerzos["date"].min().date()),
             "refuerzosTo": str(refuerzos["date"].max().date()),
             "movilFrom": str(movil["date"].min().date()),
