@@ -291,6 +291,7 @@ def iter_dim_flota() -> Iterator[dict[str, Any]]:
 
 
 def iter_fact_salidas_transporte() -> Iterator[dict[str, Any]]:
+    helpers = build_helpers()
     path = DASHBOARD / "dashboard_records.json.gz"
     payload = read_gzip_json(path)
     for row in payload.get("records", {}).get("pesadas", []):
@@ -303,6 +304,7 @@ def iter_fact_salidas_transporte() -> Iterator[dict[str, Any]]:
             "service_date": service_date,
             "month_key": clean_text(row.get("month")) or service_date[:7],
             "garbigune": garbigune,
+            "site_key": helpers.normalize_site(garbigune),
             "residuo": residuo,
             "vehicle_plate": clean_text(row.get("vehicle")),
             "driver_name": clean_text(row.get("driver")),

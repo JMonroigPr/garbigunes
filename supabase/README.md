@@ -51,6 +51,14 @@ Esta tercera migracion crea:
 - `analytics.fact_refuerzos`
 - vistas genericas `analytics.v_*` de bajo acoplamiento
 
+Para normalizar el cruce de salidas con Garbigunes, ejecutar despues:
+
+```text
+supabase/migrations/20260803_0004_add_site_key_to_salidas.sql
+```
+
+Esta migracion anade `site_key` a `analytics.fact_salidas_transporte` y actualiza `analytics.v_salidas_monthly`.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.

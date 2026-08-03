@@ -279,6 +279,8 @@ def normalize_site(value: Any) -> str:
     text = normalize_text(value)
     text = re.sub(r"^GARBIGUNE\s+", "", text).strip()
     aliases = {
+        "AMOREBIETA ETXANO": "AMOREBIETA-ETXANO",
+        "ORDUNA": "ORDUÑA",
         "SOPELA": "SOPELANA",
         "GAUTEGIZ DE ARTEAGA": "GAUTEGIZ ARTEAGA",
         "GERNIKA LUMO": "GERNIKA",

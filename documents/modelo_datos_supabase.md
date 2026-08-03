@@ -30,12 +30,12 @@ Grano: un servicio/pesada de salida transportada.
 Campos clave:
 
 - `service_date`, `month_key`
-- `garbigune`, `residuo`
+- `garbigune`, `site_key`, `residuo`
 - `vehicle_plate`, `driver_name`
 - `base`, `route_name`
 - `kg`
 
-Uso: eficiencia operativa de salidas, conductores, vehiculos, rutas y garbigunes.
+Uso: eficiencia operativa de salidas, conductores, vehiculos, rutas y garbigunes. `site_key` es la clave preferente para cruzar con `analytics.dim_garbigunes`; `garbigune` conserva el texto operativo de origen.
 
 ### `analytics.fact_captacion_aw`
 
