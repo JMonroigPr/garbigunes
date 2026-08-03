@@ -20,6 +20,7 @@ DEFAULT_TABLES = (
     "dim_flota",
     "config_site_aliases",
     "config_familias_aw",
+    "config_residuos_salida_aw_equivalencias",
     "config_quality_rules",
     "quality_aw_weight_anomalies",
     "fact_salidas_transporte",
@@ -37,6 +38,9 @@ DEFAULT_VIEWS = (
     "v_vehicle_monthly_context",
     "v_quality_summary",
     "v_site_alias_quality",
+    "v_salidas_aw_family_monthly",
+    "v_aw_vs_salidas_family_monthly",
+    "v_residuos_salida_aw_equivalence_quality",
 )
 
 

@@ -75,6 +75,14 @@ supabase/migrations/20260803_0006_refuerzos_place_keys.sql
 
 Esta migracion anade `place_key`, `place_type` y `site_key` a `analytics.fact_refuerzos` y actualiza `analytics.v_refuerzos_monthly`.
 
+Para comparar salidas transportadas con familias AW, ejecutar:
+
+```text
+supabase/migrations/20260803_0007_waste_aw_equivalences.sql
+```
+
+Esta migracion crea `analytics.config_residuos_salida_aw_equivalencias` y vistas genericas para salidas por familia AW y comparativa AW vs salidas.
+
 ## Siguiente paso
 
 Crear un script de carga desde los ficheros locales hacia Supabase usando la connection string o las credenciales de API del proyecto.
@@ -132,7 +140,7 @@ La politica actual de fuentes es:
 Cargar dimensiones/configuracion:
 
 ```bash
-python3 scripts/load_supabase_data.py --tables dim_garbigunes dim_flota config_site_aliases config_familias_aw config_quality_rules
+python3 scripts/load_supabase_data.py --tables dim_garbigunes dim_flota config_site_aliases config_familias_aw config_residuos_salida_aw_equivalencias config_quality_rules
 ```
 
 Cargar calidad AW:

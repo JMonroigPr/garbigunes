@@ -32,6 +32,7 @@ TABLE_ORDER = (
     "dim_flota",
     "config_site_aliases",
     "config_familias_aw",
+    "config_residuos_salida_aw_equivalencias",
     "config_quality_rules",
     "quality_aw_weight_anomalies",
     "fact_salidas_transporte",
@@ -45,6 +46,7 @@ TABLE_DELETE_FILTERS = {
     "dim_flota": "vehicle_plate=not.is.null",
     "config_site_aliases": "raw_name=not.is.null",
     "config_familias_aw": "residuo_aw=not.is.null",
+    "config_residuos_salida_aw_equivalencias": "residuo_salida=not.is.null",
     "config_quality_rules": "rule_key=not.is.null",
     "quality_aw_weight_anomalies": "id=not.is.null",
     "fact_salidas_transporte": "id=not.is.null",
@@ -62,6 +64,7 @@ def config_path(domain: str, key: str, fallback: Path) -> Path:
 GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
 SITE_ALIASES_INPUT = config_path("site_aliases", "current", ROOT / "data" / "reference" / "garbigunes" / "site_aliases.csv")
 AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
+AW_EQUIVALENCES_INPUT = config_path("aw_equivalences", "current", ROOT / "data" / "reference" / "residuos" / "residuos_salida_aw_equivalencias.csv")
 QUALITY_RULES_INPUT = config_path("quality_rules", "current", ROOT / "data" / "reference" / "quality" / "quality_rules.csv")
 AW_WEIGHT_ANOMALIES_INPUT = config_path("aw_weight_anomalies", "current", ROOT / "data" / "processed" / "quality" / "aw_weight_anomalies.csv")
 
@@ -239,6 +242,24 @@ def iter_config_site_aliases() -> Iterator[dict[str, Any]]:
             "active": clean_bool(row.get("active")),
             "notes": clean_text(row.get("notes")),
         }
+
+
+def iter_config_residuos_salida_aw_equivalencias() -> Iterator[dict[str, Any]]:
+    for row in read_csv_dicts(AW_EQUIVALENCES_INPUT):
+        residuo_salida = clean_text(row.get("residuo_salida"))
+        familias_text = clean_text(row.get("familias_aw"))
+        if not residuo_salida or not familias_text:
+            continue
+        for rank, familia_aw in enumerate((item.strip() for item in familias_text.split("|")), start=1):
+            if not familia_aw:
+                continue
+            yield {
+                "residuo_salida": residuo_salida.upper(),
+                "familia_aw": familia_aw,
+                "family_rank": rank,
+                "criterio": clean_text(row.get("criterio")),
+                "active": True,
+            }
 
 
 def iter_config_quality_rules() -> Iterator[dict[str, Any]]:
@@ -435,6 +456,7 @@ TABLE_LOADERS = {
     "dim_flota": iter_dim_flota,
     "config_site_aliases": iter_config_site_aliases,
     "config_familias_aw": iter_config_familias_aw,
+    "config_residuos_salida_aw_equivalencias": iter_config_residuos_salida_aw_equivalencias,
     "config_quality_rules": iter_config_quality_rules,
     "quality_aw_weight_anomalies": iter_quality_aw_weight_anomalies,
     "fact_salidas_transporte": iter_fact_salidas_transporte,

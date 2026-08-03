@@ -92,6 +92,20 @@ Campos clave:
 
 Uso: evitar aliases hardcodeados en Python y controlar de forma editable que nombres como `AMOREBIETA ETXANO` u `ORDUNA` crucen con `dim_garbigunes`. Los puntos no equivalentes a Garbigune fijo pueden mantenerse como `non_fixed` o `review`.
 
+### `analytics.config_residuos_salida_aw_equivalencias`
+
+Grano: una equivalencia entre un residuo de salida transportada y una familia AW.
+
+Campos clave:
+
+- `residuo_salida`
+- `familia_aw`
+- `family_rank`
+- `criterio`
+- `active`
+
+Uso: comparar entradas AW y salidas transportadas por familias de residuo sin hardcodear la relacion en Python ni en el frontend. Un residuo de salida puede mapear a varias familias AW; `family_rank` conserva el orden/criterio del CSV editable.
+
 ## Nuevas tablas de calidad y recursos
 
 ### `analytics.config_quality_rules`
@@ -177,6 +191,9 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_vehicle_monthly_context`: salidas e incidencias mensuales por vehiculo.
 - `analytics.v_quality_summary`: reglas activas y resumen de anomalias pendientes.
 - `analytics.v_site_alias_quality`: comprueba si cada alias cruza con `dim_garbigunes`.
+- `analytics.v_salidas_aw_family_monthly`: salidas transportadas agregadas por familia AW equivalente.
+- `analytics.v_aw_vs_salidas_family_monthly`: comparativa mensual generica AW vs salidas por `site_key` y familia AW.
+- `analytics.v_residuos_salida_aw_equivalence_quality`: cobertura de residuos de salida en la tabla de equivalencias.
 
 Estas vistas son deliberadamente genericas. Las vistas especificas para tarjetas del dashboard final deberian crearse solo cuando se cierre el diseno del entregable.
 
