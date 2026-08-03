@@ -36,7 +36,6 @@ create or replace view analytics.v_salidas_monthly as
 select
   month_key,
   garbigune,
-  site_key,
   residuo,
   vehicle_plate,
   driver_name,
@@ -45,7 +44,8 @@ select
   count(*)::integer as services,
   sum(kg)::numeric(16, 3) as kg,
   (sum(kg) / 1000)::numeric(16, 3) as tons,
-  avg(kg)::numeric(14, 3) as avg_kg_per_service
+  avg(kg)::numeric(14, 3) as avg_kg_per_service,
+  site_key
 from analytics.fact_salidas_transporte
 group by month_key, garbigune, site_key, residuo, vehicle_plate, driver_name, base, route_name;
 

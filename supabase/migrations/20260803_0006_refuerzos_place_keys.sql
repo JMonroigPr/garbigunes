@@ -51,12 +51,12 @@ create or replace view analytics.v_refuerzos_monthly as
 select
   month_key,
   place,
-  place_key,
-  place_type,
-  site_key,
   reason,
   covered_by,
-  count(*)::integer as reinforcements
+  count(*)::integer as reinforcements,
+  place_key,
+  place_type,
+  site_key
 from analytics.fact_refuerzos
 group by month_key, place, place_key, place_type, site_key, reason, covered_by;
 
