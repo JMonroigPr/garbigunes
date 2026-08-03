@@ -8,7 +8,7 @@ create table if not exists analytics.config_site_aliases (
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint config_site_aliases_type_check check (site_type in ('fixed', 'mobile', 'beach', 'non_fixed', 'external', 'quality', 'review'))
+  constraint config_site_aliases_type_check check (site_type in ('fixed', 'mobile', 'beach', 'non_fixed', 'external', 'transport_base', 'quality', 'review'))
 );
 
 drop trigger if exists config_site_aliases_touch_updated_at on analytics.config_site_aliases;
