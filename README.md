@@ -6,7 +6,9 @@ Dashboard estático para analizar operaciones de garbigunes fijos y móvil, log�
 
 - `dashboard/`: aplicación HTML/CSS/JS desplegable como sitio estático.
 - `scripts/build_dashboard_data.py`: genera los datos agregados y los ficheros consumidos por el dashboard.
-- `input_data/`: fuentes operativas y tablas auxiliares.
+- `data/`: estructura activa de fuentes históricas, actualizaciones y referencias.
+- `config/data_sources.json`: catálogo de fuentes y política de combinación.
+- `input_data/`: carpeta original recibida, mantenida como respaldo/compatibilidad.
 - `documents/`: documentos de análisis y propuestas.
 
 ## Generación de datos

@@ -1,0 +1,83 @@
+{
+  "version": "2026-08-03",
+  "policy": "Historical sources are kept under data/raw/historical. Partial updates are kept under data/raw/updates/2026-07. For overlapping date windows, updated files take precedence. AW capture keeps the historical workbook because it preserves postal code and origin municipality.",
+  "backup": "data_archive/original_input_data_20260803",
+  "sources": {
+    "pesadas": {
+      "historical": "data/raw/historical/transportes/AST_Pesadas_Garbigunes_2023-YTD_enviar.ods",
+      "updates": [
+        "data/raw/updates/2026-07/transportes/AST_Pesadas_Garbigunes_2025.ods",
+        "data/raw/updates/2026-07/transportes/AST_Pesadas_Garbigunes_2026-YTD.ods"
+      ],
+      "merge_policy": "prefer_updates_by_date_window"
+    },
+    "captacion_aw": {
+      "historical": "data/raw/historical/entradas_aw/Registro detalles residuos_2026-2018.xlsx",
+      "sample": "data/raw/historical/entradas_aw/AST_AW_Ejemplo_Registro detalles residuos.xlsx",
+      "update_not_used": "data/raw/updates/2026-07/entradas_aw/DetallesEntradasGarbiker.xlsx",
+      "decision": "The update file does not include C.P. or Municipio origen, so it is not a replacement for CP capture analysis."
+    },
+    "incidencias": {
+      "historical": "data/raw/historical/flota/AST_2022-2026YTD_Incidencias_Vehículos.ods",
+      "updates": [
+        "data/raw/updates/2026-07/flota/AST_2025-202606_Incidencias_Vehículos.ods"
+      ],
+      "merge_policy": "prefer_updates_by_date_window"
+    },
+    "flota": {
+      "historical": "data/raw/historical/flota/AST_20260624_Flota.ods",
+      "preferred": "data/raw/updates/2026-07/flota/AST_202606_Flota.ods"
+    },
+    "talleres": {
+      "historical": "data/raw/historical/flota/AST_20260624_Talleres.ods",
+      "preferred": "data/raw/updates/2026-07/flota/AST_202606_Talleres.ods"
+    },
+    "gnc": {
+      "historical": "data/raw/historical/flota/AST_20260624_Estaciones de servicio GNC.ods",
+      "preferred": "data/raw/updates/2026-07/flota/AST_20260630_Estaciones de servicio GNC.ods"
+    },
+    "rutas": {
+      "historical": "data/raw/historical/garbigunes/AST_20260625_Rutas_transporte_garbigunes.ods",
+      "preferred": "data/reference/garbigunes/AST_20260625_Rutas_transporte_garbigunes.ods"
+    },
+    "refuerzos": {
+      "historical": "data/raw/historical/refuerzos/AST_Refuerzos-TRANSPORTE GARBIGUNE.xlsx",
+      "updates": [
+        "data/raw/updates/2026-07/refuerzos/Refuerzos-2025bis_Solo_GAR.xlsx",
+        "data/raw/updates/2026-07/refuerzos/Refuerzos-2026bis_solo_GAR.xlsx"
+      ],
+      "merge_policy": "prefer_updates_by_date_window"
+    },
+    "movil": {
+      "historical": "data/raw/historical/movil/AST_GarbigunesMovil-Todos.xlsx",
+      "updates": [
+        "data/raw/updates/2026-07/movil/GarbigunesMovil-Todos.xlsx"
+      ],
+      "merge_policy": "prefer_updates_by_date_window"
+    },
+    "convenios": {
+      "current": "data/reference/garbigunes/2026_Ayuntamientos_Conveniados_Garbigunes.ods"
+    },
+    "garbigune_locations": {
+      "current": "data/reference/garbigunes/garbigunes_ubicaciones.csv"
+    },
+    "aw_families": {
+      "current": "data/reference/residuos/residuos_aw_familias.csv"
+    },
+    "aw_equivalences": {
+      "current": "data/reference/residuos/residuos_salida_aw_equivalencias.csv"
+    },
+    "deposit_limits": {
+      "current": "data/reference/residuos/Límites_depósito_por_residuo.xlsx"
+    },
+    "cp_geojson": {
+      "current": "data/reference/geodata/bizkaia_codigos_postales.geojson"
+    },
+    "coberturas": {
+      "current": "data/raw/updates/2026-07/recursos/Coberturas-solo_GAR.xlsx"
+    },
+    "personal_historico": {
+      "current": "data/raw/historical/recursos/AST_Datos históricos personal Transporte Garbigune.docx"
+    }
+  }
+}

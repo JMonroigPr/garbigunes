@@ -18,6 +18,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = ROOT / "input_data"
 DASHBOARD = ROOT / "dashboard"
+DATA_SOURCE_CONFIG = ROOT / "config" / "data_sources.json"
+DATA_SOURCES = json.loads(DATA_SOURCE_CONFIG.read_text(encoding="utf-8"))["sources"] if DATA_SOURCE_CONFIG.exists() else {}
 
 DEFAULT_SCHEMA = "analytics"
 DEFAULT_BATCH_SIZE = 1000
@@ -35,6 +37,15 @@ TABLE_DELETE_FILTERS = {
     "fact_salidas_transporte": "id=not.is.null",
     "fact_captacion_aw": "id=not.is.null",
 }
+
+
+def config_path(domain: str, key: str, fallback: Path) -> Path:
+    value = DATA_SOURCES.get(domain, {}).get(key)
+    return ROOT / value if value else fallback
+
+
+GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
+AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
 
 
 class SupabaseError(RuntimeError):
@@ -120,7 +131,7 @@ def read_gzip_json(path: Path) -> dict[str, Any]:
 
 
 def iter_dim_garbigunes() -> Iterator[dict[str, Any]]:
-    path = INPUT / "garbigunes_ubicaciones.csv"
+    path = GARBIKUNE_LOCATIONS_INPUT
     for row in read_csv_dicts(path):
         site_key = clean_text(row.get("site_key")) or clean_text(row.get("garbigune"))
         if not site_key:
@@ -139,7 +150,7 @@ def iter_dim_garbigunes() -> Iterator[dict[str, Any]]:
 
 
 def iter_config_familias_aw() -> Iterator[dict[str, Any]]:
-    path = INPUT / "residuos_aw_familias.csv"
+    path = AW_FAMILIES_INPUT
     for row in read_csv_dicts(path):
         residuo_aw = clean_text(row.get("residuo_aw"))
         if not residuo_aw:

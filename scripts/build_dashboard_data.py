@@ -20,41 +20,58 @@ from docx import Document
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = ROOT / "input_data"
 UPDATED_INPUT = INPUT / "datos_actualizados"
+DATA_ROOT = ROOT / "data"
+DATA_SOURCE_CONFIG = ROOT / "config" / "data_sources.json"
+DATA_SOURCES = json.loads(DATA_SOURCE_CONFIG.read_text(encoding="utf-8"))["sources"] if DATA_SOURCE_CONFIG.exists() else {}
 OUTPUT = ROOT / "dashboard" / "dashboard_data.js"
 QUALITY_OUTPUT = ROOT / "dashboard" / "data_quality_report.json"
 RECORDS_OUTPUT = ROOT / "dashboard" / "dashboard_records.json.gz"
 RECORDS_SCRIPT_OUTPUT = ROOT / "dashboard" / "dashboard_records.js"
 CAPTURE_GEOJSON_OUTPUT = ROOT / "dashboard" / "bizkaia_codigos_postales.geojson"
 AW_AGGREGATES_OUTPUT = ROOT / "dashboard" / "aw_capture_aggregates.json.gz"
-AW_FAMILIES_INPUT = INPUT / "residuos_aw_familias.csv"
-AW_EQUIVALENCES_INPUT = INPUT / "residuos_salida_aw_equivalencias.csv"
-AW_HISTORICAL_INPUT = INPUT / "Registro detalles residuos_2026-2018.xlsx"
-AW_SAMPLE_INPUT = INPUT / "AST_AW_Ejemplo_Registro detalles residuos.xlsx"
+def config_path(domain: str, key: str, fallback: Path) -> Path:
+    value = DATA_SOURCES.get(domain, {}).get(key)
+    return ROOT / value if value else fallback
 
-PESADAS_MAIN_INPUT = INPUT / "AST_Pesadas_Garbigunes_2023-YTD_enviar.ods"
-PESADAS_UPDATED_INPUTS = [
+
+def config_paths(domain: str, key: str, fallback: list[Path]) -> list[Path]:
+    values = DATA_SOURCES.get(domain, {}).get(key)
+    return [ROOT / value for value in values] if values else fallback
+
+
+AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
+AW_EQUIVALENCES_INPUT = config_path("aw_equivalences", "current", INPUT / "residuos_salida_aw_equivalencias.csv")
+AW_HISTORICAL_INPUT = config_path("captacion_aw", "historical", INPUT / "Registro detalles residuos_2026-2018.xlsx")
+AW_SAMPLE_INPUT = config_path("captacion_aw", "sample", INPUT / "AST_AW_Ejemplo_Registro detalles residuos.xlsx")
+
+PESADAS_MAIN_INPUT = config_path("pesadas", "historical", INPUT / "AST_Pesadas_Garbigunes_2023-YTD_enviar.ods")
+PESADAS_UPDATED_INPUTS = config_paths("pesadas", "updates", [
     UPDATED_INPUT / "3. Transportes-pesadas" / "AST_Pesadas_Garbigunes_2025.ods",
     UPDATED_INPUT / "3. Transportes-pesadas" / "AST_Pesadas_Garbigunes_2026-YTD.ods",
-]
-INCIDENCIAS_MAIN_INPUT = INPUT / "AST_2022-2026YTD_Incidencias_Vehículos.ods"
-INCIDENCIAS_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_2025-202606_Incidencias_Vehículos.ods"
-FLOTA_INPUT = INPUT / "AST_20260624_Flota.ods"
-FLOTA_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_202606_Flota.ods"
-GNC_INPUT = INPUT / "AST_20260624_Estaciones de servicio GNC.ods"
-GNC_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_20260630_Estaciones de servicio GNC.ods"
-TALLERES_INPUT = INPUT / "AST_20260624_Talleres.ods"
-TALLERES_UPDATED_INPUT = UPDATED_INPUT / "5. Flota" / "AST_202606_Talleres.ods"
-RUTAS_INPUT = INPUT / "AST_20260625_Rutas_transporte_garbigunes.ods"
-RUTAS_UPDATED_INPUT = UPDATED_INPUT / "6. Garbigunes rutas" / "AST_20260625_Rutas_transporte_garbigunes.ods"
-REFUERZOS_MAIN_INPUT = INPUT / "AST_Refuerzos-TRANSPORTE GARBIGUNE.xlsx"
-REFUERZOS_UPDATED_INPUTS = [
+])
+INCIDENCIAS_MAIN_INPUT = config_path("incidencias", "historical", INPUT / "AST_2022-2026YTD_Incidencias_Vehículos.ods")
+INCIDENCIAS_UPDATED_INPUT = config_paths("incidencias", "updates", [UPDATED_INPUT / "5. Flota" / "AST_2025-202606_Incidencias_Vehículos.ods"])[0]
+FLOTA_INPUT = config_path("flota", "historical", INPUT / "AST_20260624_Flota.ods")
+FLOTA_UPDATED_INPUT = config_path("flota", "preferred", UPDATED_INPUT / "5. Flota" / "AST_202606_Flota.ods")
+GNC_INPUT = config_path("gnc", "historical", INPUT / "AST_20260624_Estaciones de servicio GNC.ods")
+GNC_UPDATED_INPUT = config_path("gnc", "preferred", UPDATED_INPUT / "5. Flota" / "AST_20260630_Estaciones de servicio GNC.ods")
+TALLERES_INPUT = config_path("talleres", "historical", INPUT / "AST_20260624_Talleres.ods")
+TALLERES_UPDATED_INPUT = config_path("talleres", "preferred", UPDATED_INPUT / "5. Flota" / "AST_202606_Talleres.ods")
+RUTAS_INPUT = config_path("rutas", "historical", INPUT / "AST_20260625_Rutas_transporte_garbigunes.ods")
+RUTAS_UPDATED_INPUT = config_path("rutas", "preferred", UPDATED_INPUT / "6. Garbigunes rutas" / "AST_20260625_Rutas_transporte_garbigunes.ods")
+REFUERZOS_MAIN_INPUT = config_path("refuerzos", "historical", INPUT / "AST_Refuerzos-TRANSPORTE GARBIGUNE.xlsx")
+REFUERZOS_UPDATED_INPUTS = config_paths("refuerzos", "updates", [
     UPDATED_INPUT / "0. Refuerzos" / "Refuerzos-2025bis_Solo_GAR.xlsx",
     UPDATED_INPUT / "0. Refuerzos" / "Refuerzos-2026bis_solo_GAR.xlsx",
-]
-MOVIL_MAIN_INPUT = INPUT / "AST_GarbigunesMovil-Todos.xlsx"
-MOVIL_UPDATED_INPUT = UPDATED_INPUT / "4. Transportes garbigune móvil" / "GarbigunesMovil-Todos.xlsx"
-COBERTURAS_UPDATED_INPUT = UPDATED_INPUT / "1.Coberturas" / "Coberturas-solo_GAR.xlsx"
-AW_UPDATED_INPUT = UPDATED_INPUT / "2. Entradas garbigunes" / "DetallesEntradasGarbiker.xlsx"
+])
+MOVIL_MAIN_INPUT = config_path("movil", "historical", INPUT / "AST_GarbigunesMovil-Todos.xlsx")
+MOVIL_UPDATED_INPUT = config_paths("movil", "updates", [UPDATED_INPUT / "4. Transportes garbigune móvil" / "GarbigunesMovil-Todos.xlsx"])[0]
+CONVENIOS_INPUT = config_path("convenios", "current", INPUT / "2026_Ayuntamientos_Conveniados_Garbigunes.ods")
+GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
+CP_GEOJSON_INPUT = config_path("cp_geojson", "current", INPUT / "bizkaia_codigos_postales.geojson")
+COBERTURAS_UPDATED_INPUT = config_path("coberturas", "current", UPDATED_INPUT / "1.Coberturas" / "Coberturas-solo_GAR.xlsx")
+AW_UPDATED_INPUT = config_path("captacion_aw", "update_not_used", UPDATED_INPUT / "2. Entradas garbigunes" / "DetallesEntradasGarbiker.xlsx")
+PERSONAL_HISTORICAL_INPUT = ROOT / DATA_SOURCES.get("personal_historico", {}).get("current", "data/raw/historical/recursos/AST_Datos históricos personal Transporte Garbigune.docx")
 
 ODS_NS = {
     "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
@@ -141,7 +158,7 @@ def existing_paths(paths: list[Path]) -> list[Path]:
 
 
 def source_label(paths: list[Path]) -> str:
-    return " + ".join(str(path.relative_to(INPUT)) for path in paths)
+    return " + ".join(str(path.relative_to(ROOT)) for path in paths)
 
 
 def parse_dates(series: pd.Series) -> pd.Series:
@@ -621,14 +638,14 @@ def aggregate_count(records: pd.DataFrame, group_cols: list[str], output_cols: d
 
 def build_capture_data() -> dict[str, Any]:
     family_map, family_legend_base = read_aw_family_table()
-    locations = read_csv(INPUT / "garbigunes_ubicaciones.csv")
+    locations = read_csv(GARBIKUNE_LOCATIONS_INPUT)
     locations["site"] = locations["garbigune"].map(clean_key)
     locations["site_key"] = locations["site_key"].map(clean_key)
     locations["cp"] = locations["codigo_postal"].map(format_cp)
     locations["lat"] = pd.to_numeric(locations["lat"], errors="coerce")
     locations["lon"] = pd.to_numeric(locations["lon"], errors="coerce")
 
-    geojson_path = INPUT / "bizkaia_codigos_postales.geojson"
+    geojson_path = CP_GEOJSON_INPUT
     geojson = json.loads(geojson_path.read_text(encoding="utf-8"))
     features = []
     geo_cps: set[str] = set()
@@ -758,21 +775,21 @@ def build_capture_data() -> dict[str, Any]:
             "geoKgShare": percentage(kg_with_geo, kg_total),
             "geoCpCount": int(len(geo_cps)),
             "unmatchedCps": unmatched_cps,
-            "familySource": "residuos_aw_familias.csv",
+            "familySource": str(AW_FAMILIES_INPUT.relative_to(ROOT)),
             "mappedWasteTypes": int(frame.loc[frame["waste"].isin(family_map.keys()), "waste"].nunique()),
             "unmappedWasteTypes": int(len(unmapped_wastes)),
             "unmappedWastes": unmapped_wastes,
             "unmappedSubfamilyTypes": int(len(unmapped_subfamilies)),
             "unmappedSubfamilies": unmapped_subfamilies,
-            "source": source.name,
+            "source": str(source.relative_to(ROOT)),
             "rawRowsRead": int(source_meta["rawRowsRead"]),
             "skippedRows": int(source_meta["skippedRows"]),
             "aggregateFile": AW_AGGREGATES_OUTPUT.name,
             "entryMetricMethod": aggregate_payload["entryMetricMethod"],
             "timeFilterNote": aggregate_payload["timeFilterNote"],
-            "geoSource": "bizkaia_codigos_postales.geojson",
+            "geoSource": str(CP_GEOJSON_INPUT.relative_to(ROOT)),
             "geoFile": "bizkaia_codigos_postales.geojson",
-            "locationSource": "garbigunes_ubicaciones.csv",
+            "locationSource": str(GARBIKUNE_LOCATIONS_INPUT.relative_to(ROOT)),
             "scopeNote": "Histórico de entradas AW; no se suma a salidas transportadas.",
         },
         "records": [],
@@ -791,7 +808,7 @@ def build_capture_data() -> dict[str, Any]:
 
 
 def read_personal_hours() -> dict[str, Any]:
-    path = INPUT / "AST_Datos históricos personal Transporte Garbigune.docx"
+    path = PERSONAL_HISTORICAL_INPUT
     document = Document(path)
     table = document.tables[0]
     rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
@@ -871,7 +888,7 @@ def read_routes() -> dict[str, Any]:
 
 
 def read_convenios() -> dict[str, Any]:
-    path = INPUT / "2026_Ayuntamientos_Conveniados_Garbigunes.ods"
+    path = CONVENIOS_INPUT
     sheets = {
         "firmado": read_ods(path, "Convenio_Firmado"),
         "sin_convenio": read_ods(path, "Sin_Convenio"),
@@ -1143,22 +1160,22 @@ def build() -> dict[str, Any]:
 
     return {
         "generatedAt": datetime.now().isoformat(timespec="seconds"),
-        "sourceFiles": sorted(str(path.relative_to(INPUT)) for path in INPUT.rglob("*") if path.is_file() and not path.name.startswith("~$") and path.name != ".DS_Store"),
+        "sourceFiles": sorted(str(path.relative_to(ROOT)) for path in DATA_ROOT.rglob("*") if path.is_file() and not path.name.startswith("~$") and path.name != ".DS_Store"),
         "activeSources": {
-            "policy": "Histórico principal + actualización parcial desde datos_actualizados; en solapes se prioriza datos_actualizados.",
+            "policy": "Histórico principal en data/raw/historical + actualización parcial en data/raw/updates; en solapes se priorizan las actualizaciones.",
             "pesadas": source_label(pesadas_sources),
             "incidencias": source_label(incidencias_sources),
-            "flota": str(flota_source.relative_to(INPUT)),
-            "rutas": str(preferred_existing(RUTAS_UPDATED_INPUT, RUTAS_INPUT).relative_to(INPUT)),
-            "convenios": "2026_Ayuntamientos_Conveniados_Garbigunes.ods",
+            "flota": str(flota_source.relative_to(ROOT)),
+            "rutas": str(preferred_existing(RUTAS_UPDATED_INPUT, RUTAS_INPUT).relative_to(ROOT)),
+            "convenios": str(CONVENIOS_INPUT.relative_to(ROOT)),
             "movil": source_label(movil_sources),
             "refuerzos": source_label(refuerzos_sources),
             "captacionAw": capture["meta"]["source"],
             "captacionAwPolicy": "Se mantiene la fuente histórica principal porque conserva C.P. y municipio origen; DetallesEntradasGarbiker.xlsx no sustituye esa información para el análisis de captación.",
-            "familiasAw": "residuos_aw_familias.csv",
-            "equivalenciasAw": AW_EQUIVALENCES_INPUT.name,
-            "garbiguneLocations": "garbigunes_ubicaciones.csv",
-            "cpGeojson": "bizkaia_codigos_postales.geojson",
+            "familiasAw": str(AW_FAMILIES_INPUT.relative_to(ROOT)),
+            "equivalenciasAw": str(AW_EQUIVALENCES_INPUT.relative_to(ROOT)),
+            "garbiguneLocations": str(GARBIKUNE_LOCATIONS_INPUT.relative_to(ROOT)),
+            "cpGeojson": str(CP_GEOJSON_INPUT.relative_to(ROOT)),
         },
         "records": {
             "pesadas": pesadas_records.to_dict("records"),
