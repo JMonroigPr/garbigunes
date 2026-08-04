@@ -1,4 +1,4 @@
-const RELATION = "v_public_salidas_monthly";
+const RELATION = "v_public_flujos_salidas_mensual";
 
 export default async function handler(_request, response) {
   const url = process.env.SUPABASE_URL;
