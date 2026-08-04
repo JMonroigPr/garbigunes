@@ -52,6 +52,10 @@
             <option value="24m">Últimos 24 meses</option>
             <option value="all">Todo el periodo</option>
           </select>
+          <div class="month-range">
+            <label for="start-month">Desde<input id="start-month" type="month" /></label>
+            <label for="end-month">Hasta<input id="end-month" type="month" /></label>
+          </div>
           <p class="filter-note" id="period-note">Periodo comparable por defecto</p>
         </section>
 
@@ -76,10 +80,10 @@
           <label for="route-filter">Ruta / base</label>
           <select id="route-filter" name="route"><option value="all">Todas</option></select>
           <label for="vehicle-filter">Vehículo</label>
-          <select id="vehicle-filter" name="vehicle"><option value="all">Todos</option></select>
+          <select id="vehicle-filter" name="vehicle" disabled><option value="all">No disponible en vista pública</option></select>
           <label for="driver-filter">Conductor</label>
-          <select id="driver-filter" name="driver"><option value="all">Todos</option></select>
-          <p class="filter-note">Aplicables a salidas transportadas.</p>
+          <select id="driver-filter" name="driver" disabled><option value="all">No disponible en vista pública</option></select>
+          <p class="filter-note">Vehículo y conductor se incorporarán mediante un acceso interno con permisos reforzados.</p>
         </details>
 
         <button class="reset-button" id="reset-filters" type="button">Restablecer filtros</button>
@@ -127,12 +131,10 @@
                 <p class="source-label">Salidas transportadas</p>
                 <h2>Evolución operativa</h2>
               </div>
-              <span class="panel-status">Próximo módulo</span>
+              <span class="panel-status">Toneladas + servicios</span>
             </div>
-            <div class="chart-placeholder" aria-label="Área reservada para evolución mensual">
-              <div class="placeholder-line line-one"></div><div class="placeholder-line line-two"></div><div class="placeholder-line line-three"></div>
-              <p>Serie mensual de entradas, salidas y servicios</p>
-            </div>
+            <div class="chart-area" id="monthly-chart" aria-label="Evolución mensual de salidas transportadas"></div>
+            <div class="chart-legend" id="chart-legend" aria-label="Leyenda de residuos"></div>
           </article>
           <article class="panel">
             <div class="panel-header">
@@ -145,12 +147,29 @@
           </article>
         </section>
 
+        <section class="content-grid lower-grid">
+          <article class="panel">
+            <div class="panel-header"><div><p class="source-label">Salidas transportadas</p><h2>Top Garbigunes</h2></div><span class="panel-status">Toneladas</span></div>
+            <div class="ranking-list" id="site-ranking"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><div><p class="source-label">Salidas transportadas</p><h2>Rutas prioritarias</h2></div><span class="panel-status">Carga media</span></div>
+            <div class="ranking-list" id="route-ranking"></div>
+          </article>
+        </section>
+
         <section class="panel table-panel analyst-only">
           <div class="panel-header">
-            <div><p class="source-label">Salidas transportadas</p><h2>Detalle operativo</h2></div>
-            <button type="button" class="text-button" disabled title="Se habilitará con el módulo de datos">Exportar CSV</button>
+            <div><p class="source-label">Comparativa homologada</p><h2>Balance y excepciones</h2></div>
+            <button type="button" class="text-button" id="export-csv">Exportar CSV</button>
           </div>
-          <div class="empty-table">La tabla, los outliers y la exportación se activarán al conectar los agregados del eje.</div>
+          <div class="table-scroll"><table><thead><tr><th>Garbigune</th><th>Familia</th><th class="number">Balance</th><th>Estado</th></tr></thead><tbody id="balance-table"></tbody></table></div>
+        </section>
+
+        <section class="axis-empty panel" id="axis-empty" aria-live="polite">
+          <p class="source-label">Eje en preparación</p>
+          <h2>Este espacio conservará su propio contrato de datos y lecturas operativas.</h2>
+          <p>La navegación, el modo de lectura y los filtros comunes ya están preparados. El contenido se activará al desarrollar cada eje independiente.</p>
         </section>
       </main>
     </div>
