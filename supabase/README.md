@@ -119,7 +119,19 @@ Para preparar acceso desde Vercel con `anon/publishable key`, ejecutar:
 
 ```text
 supabase/migrations/20260803_0012_public_rls_policies.sql
+supabase/migrations/20260804_0013_flujos_recogidas_views.sql
 ```
+
+La migración `20260804_0013_flujos_recogidas_views.sql` crea la capa reutilizable del primer eje:
+
+- `v_flujos_salidas_mensual`: salidas por punto, ruta, base y residuo con carga media y dispersión.
+- `v_flujos_rutas_mensual`: perfil mensual de ruta con volumen, días activos, puntos atendidos y variabilidad.
+- `v_flujos_cadencia_diaria` y `v_flujos_cadencia_mensual`: intervalo observado entre días de servicio.
+- `v_flujos_garbigunes_mensual`: contexto paralelo de entradas AW y salidas por punto.
+- `v_flujos_balance_mensual`: contraste entre entradas AW y salidas ponderadas por familia.
+- variantes `v_public_flujos_*` para el frontend, sin personas, matrículas ni filas crudas.
+
+Son vistas normales para mantener un contrato de datos flexible durante el piloto. Si las consultas de producción requieren más rendimiento, podrán convertirse en vistas materializadas con refresco en el pipeline sin cambiar los nombres ni la forma de los resultados públicos.
 
 Esta migracion activa RLS en tablas base, revoca lectura publica amplia y expone solo tablas de configuracion seguras y vistas agregadas sin conductores, matriculas ni respuestas de cliente:
 

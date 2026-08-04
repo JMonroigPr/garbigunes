@@ -233,6 +233,12 @@ Uso: presion de recursos y coberturas. `place_key` permite agrupar Garbigunes, b
 - `analytics.v_salidas_aw_family_monthly`: salidas transportadas agregadas por familia AW equivalente con kg ponderados por `allocation_weight`.
 - `analytics.v_aw_vs_salidas_family_monthly`: comparativa mensual generica AW vs salidas por `site_key` y familia AW, usando salidas ponderadas.
 - `analytics.v_residuos_salida_aw_equivalence_quality`: cobertura de residuos de salida y control de pesos activos en la tabla de equivalencias.
+- `analytics.v_flujos_salidas_mensual`: salidas por mes, punto, residuo, ruta y base, con servicios, días activos y estadísticos de carga.
+- `analytics.v_flujos_rutas_mensual`: perfil mensual de ruta con puntos atendidos, volumen, días activos y variabilidad de carga.
+- `analytics.v_flujos_cadencia_diaria` y `analytics.v_flujos_cadencia_mensual`: intervalo observado entre días de servicio por punto y residuo.
+- `analytics.v_flujos_garbigunes_mensual`: contexto mensual de entradas AW y salidas por punto, sin tratarlas como balance entre familias.
+- `analytics.v_flujos_balance_mensual`: comparativa mensual entre AW y salidas ponderadas por familia; el balance es contraste de registros, no stock.
+- `analytics.v_public_flujos_*`: superficie segura para el visor web de Flujos y recogidas, sin conductores, matrículas ni filas crudas.
 - `analytics.v_etl_load_runs_latest`: ultimas ejecuciones del pipeline con fuentes, estado y rutas de logs.
 - `analytics.v_etl_load_runs_table_counts`: historico de filas cargadas por tabla y ejecucion.
 

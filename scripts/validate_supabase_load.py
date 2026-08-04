@@ -46,6 +46,16 @@ DEFAULT_VIEWS = (
     "v_salidas_aw_family_monthly",
     "v_aw_vs_salidas_family_monthly",
     "v_residuos_salida_aw_equivalence_quality",
+    "v_flujos_salidas_mensual",
+    "v_public_flujos_salidas_mensual",
+    "v_flujos_rutas_mensual",
+    "v_public_flujos_rutas_mensual",
+    "v_flujos_cadencia_mensual",
+    "v_public_flujos_cadencia_mensual",
+    "v_flujos_garbigunes_mensual",
+    "v_public_flujos_garbigunes_mensual",
+    "v_flujos_balance_mensual",
+    "v_public_flujos_balance_mensual",
 )
 
 
