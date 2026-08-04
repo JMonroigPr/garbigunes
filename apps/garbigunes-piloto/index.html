@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#117a65" />
+    <title>Garbigunes | Visor operativo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Ir al contenido</a>
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">G</span>
+        <div>
+          <p class="eyebrow">Garbiker Bizkaia</p>
+          <p class="brand-name">Visor Garbigunes</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="connection-status is-pending" id="connection-status" role="status">Comprobando datos</span>
+        <div class="mode-switch" aria-label="Modo de lectura">
+          <button class="mode-button is-active" type="button" data-mode="executive">Ejecutivo</button>
+          <button class="mode-button" type="button" data-mode="analyst">Analista</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="axis-nav" aria-label="Ejes del visor">
+      <button class="axis-button is-active" type="button" data-axis="flows">Flujos y recogidas</button>
+      <button class="axis-button" type="button" data-axis="specialisation">Especialización de residuos</button>
+      <button class="axis-button" type="button" data-axis="capture">Captación territorial</button>
+      <button class="axis-button" type="button" data-axis="resources">Recursos y cobertura</button>
+      <button class="axis-button" type="button" data-axis="circularity">Circularidad</button>
+    </nav>
+
+    <div class="app-layout">
+      <aside class="filter-panel" aria-label="Filtros globales">
+        <div class="filter-heading">
+          <div>
+            <p class="eyebrow">Selección común</p>
+            <h2>Filtros</h2>
+          </div>
+          <button class="icon-button" type="button" id="collapse-filters" aria-label="Plegar filtros" title="Plegar filtros">‹</button>
+        </div>
+
+        <section class="filter-group">
+          <label for="period-preset">Intervalo</label>
+          <select id="period-preset" name="period">
+            <option value="12m">Últimos 12 meses completos</option>
+            <option value="ytd">Año en curso</option>
+            <option value="24m">Últimos 24 meses</option>
+            <option value="all">Todo el periodo</option>
+          </select>
+          <p class="filter-note" id="period-note">Periodo comparable por defecto</p>
+        </section>
+
+        <section class="filter-group">
+          <div class="filter-label-row">
+            <label>Tipo de residuo</label>
+            <button class="text-button" id="clear-waste" type="button">Ninguno</button>
+          </div>
+          <div class="chip-list" id="waste-chips" aria-label="Tipos de residuo"></div>
+          <button class="text-button" id="select-all-waste" type="button">Seleccionar todos</button>
+        </section>
+
+        <section class="filter-group">
+          <label for="site-filter">Garbigune</label>
+          <select id="site-filter" name="site">
+            <option value="all">Todos los puntos</option>
+          </select>
+        </section>
+
+        <details class="advanced-filters">
+          <summary>Contexto de salidas</summary>
+          <label for="route-filter">Ruta / base</label>
+          <select id="route-filter" name="route"><option value="all">Todas</option></select>
+          <label for="vehicle-filter">Vehículo</label>
+          <select id="vehicle-filter" name="vehicle"><option value="all">Todos</option></select>
+          <label for="driver-filter">Conductor</label>
+          <select id="driver-filter" name="driver"><option value="all">Todos</option></select>
+          <p class="filter-note">Aplicables a salidas transportadas.</p>
+        </details>
+
+        <button class="reset-button" id="reset-filters" type="button">Restablecer filtros</button>
+      </aside>
+
+      <main id="main-content" class="main-content" tabindex="-1">
+        <div class="context-bar">
+          <div>
+            <p class="eyebrow" id="axis-domain">Entradas y salidas</p>
+            <h1 id="axis-title">Flujos y recogidas</h1>
+            <p id="axis-description">Demanda, salidas transportadas, cadencia y variabilidad de ruta.</p>
+          </div>
+          <div class="active-filters" id="active-filters" aria-label="Filtros activos"></div>
+        </div>
+
+        <section class="callout-shell" id="axis-callout" aria-live="polite"></section>
+
+        <section class="metric-grid" aria-label="Indicadores principales">
+          <article class="metric-card">
+            <p class="metric-label">Entradas AW</p>
+            <strong id="metric-entries">--</strong>
+            <span>Toneladas registradas</span>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">Salidas transportadas</p>
+            <strong id="metric-outputs">--</strong>
+            <span>Toneladas transportadas</span>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">Servicios de salida</p>
+            <strong id="metric-services">--</strong>
+            <span>Pesadas de transporte</span>
+          </article>
+          <article class="metric-card">
+            <p class="metric-label">Kg por servicio</p>
+            <strong id="metric-load">--</strong>
+            <span>Disponible con muestra suficiente</span>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel panel-large">
+            <div class="panel-header">
+              <div>
+                <p class="source-label">Salidas transportadas</p>
+                <h2>Evolución operativa</h2>
+              </div>
+              <span class="panel-status">Próximo módulo</span>
+            </div>
+            <div class="chart-placeholder" aria-label="Área reservada para evolución mensual">
+              <div class="placeholder-line line-one"></div><div class="placeholder-line line-two"></div><div class="placeholder-line line-three"></div>
+              <p>Serie mensual de entradas, salidas y servicios</p>
+            </div>
+          </article>
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="source-label">Comparativa homologada</p>
+                <h2>Lecturas prioritarias</h2>
+              </div>
+            </div>
+            <ol class="insight-list" id="insight-list"></ol>
+          </article>
+        </section>
+
+        <section class="panel table-panel analyst-only">
+          <div class="panel-header">
+            <div><p class="source-label">Salidas transportadas</p><h2>Detalle operativo</h2></div>
+            <button type="button" class="text-button" disabled title="Se habilitará con el módulo de datos">Exportar CSV</button>
+          </div>
+          <div class="empty-table">La tabla, los outliers y la exportación se activarán al conectar los agregados del eje.</div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

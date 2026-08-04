@@ -4,7 +4,7 @@ Repositorio de datos, especificaciones y aplicaciones del piloto de inteligencia
 
 ## Estructura
 
-- `apps/garbigunes-piloto/`: nueva aplicación del entregable final por ejes. Aún no contiene implementación de interfaz.
+- `apps/garbigunes-piloto/`: shell funcional del nuevo visor por ejes, con filtros comunes y conexión inicial de solo lectura a Supabase.
 - `apps/legacy-dashboard/`: prototipo histórico desplegable; se conserva para consulta y compatibilidad del pipeline actual.
 - `archive/`: copias locales inmutables de hitos del prototipo. No se versionan los archivos duplicados de las aplicaciones.
 - `config/reference/`: CSV pequeños y editables que versionan aliases, taxonomías, equivalencias y reglas de calidad.
