@@ -1,0 +1,57 @@
+raw_name,site_key,site_type,active,notes
+AMOREBIETA ETXANO,AMOREBIETA-ETXANO,fixed,true,Alias sin guion detectado en salidas/AW.
+AMOREBIETA-ETXANO,AMOREBIETA-ETXANO,fixed,true,Nombre maestro.
+ORDUNA,ORDUÑA,fixed,true,Alias sin eñe detectado en salidas/AW.
+ORDUÑA,ORDUÑA,fixed,true,Nombre maestro.
+SOPELA,SOPELANA,fixed,true,Nombre web/fuente para Garbigune Sopelana.
+SOPELANA,SOPELANA,fixed,true,Nombre operativo normalizado.
+GAUTEGIZ DE ARTEAGA,GAUTEGIZ ARTEAGA,fixed,true,Alias municipal largo.
+GAUTEGIZ ARTEAGA,GAUTEGIZ ARTEAGA,fixed,true,Nombre maestro.
+GERNIKA LUMO,GERNIKA,fixed,true,Alias municipal largo.
+GERNIKA-LUMO,GERNIKA,fixed,true,Alias con guion.
+MARKINA XEMEIN,MARKINA,fixed,true,Alias municipal largo.
+MARKINA-XEMEIN,MARKINA,fixed,true,Alias con guion.
+KARRANTZA HARANA VALLE DE CARRANZA,KARRANTZA,fixed,true,Alias bilingue/largo.
+CARRANZA,KARRANTZA,fixed,true,Alias castellano.
+GUENES,GÜEÑES,fixed,true,Alias sin diéresis/eñe.
+GÜEÑES,GÜEÑES,fixed,true,Nombre maestro.
+GARBIGUNE AMOREBIETA ETXANO,AMOREBIETA-ETXANO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE AMOREBIETA-ETXANO,AMOREBIETA-ETXANO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE AMOROTO,AMOROTO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE BARAKALDO,BARAKALDO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE BASAURI,BASAURI,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE BERMEO,BERMEO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE CARRANZA,KARRANTZA,fixed,true,Refuerzos: alias castellano de Karrantza.
+GARBIGUNE DURANGO,DURANGO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE ERANDIO,ERANDIO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE GAUTEGIZ ARTEAGA,GAUTEGIZ ARTEAGA,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE GERNIKA,GERNIKA,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE GETXO,GETXO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE GÜEÑES,GÜEÑES,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE MARKINA,MARKINA,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE MUNGIA,MUNGIA,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE MUSKIZ,MUSKIZ,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE ORDUÑA,ORDUÑA,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE SANTURTZI,SANTURTZI,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE SESTAO,SESTAO,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+GARBIGUNE ZALLA,ZALLA,fixed,true,Refuerzos: alias de lugar con prefijo Garbigune.
+G509 GARBIGUNE MOVIL,GARBIGUNE_MOVIL,mobile,true,Refuerzos: punto/servicio de Garbigune móvil.
+TRANSPORTE DE GARBIGUNES PABELLON AMOREBIETA,BASE_AMOREBIETA,transport_base,true,Refuerzos: base operativa de transporte.
+TRANSPORTE DE GARBIGUNES ARTIGAS,BASE_ARTIGAS,transport_base,true,Refuerzos: base operativa de transporte.
+TRANSPORTE DE GARBIGUNES DERIO,BASE_DERIO,transport_base,true,Refuerzos: base operativa de transporte.
+TRANSPORTE DE GARBIGUNES BASAURI,BASE_BASAURI,transport_base,true,Refuerzos: base operativa de transporte.
+TRANSPORTE DE GARBIGUNES GERNIKA,BASE_GERNIKA,transport_base,true,Refuerzos: base operativa de transporte.
+TRANSPORTE DE GARBIGUNES BARAKALDO,BASE_BARAKALDO,transport_base,true,Refuerzos: base operativa de transporte.
+TRANSPORTE DE GARBIGUNES SANTURTZI,BASE_SANTURTZI,transport_base,true,Refuerzos: base operativa de transporte.
+GETXO ARRIGUNAGA,GETXO ARRIGUNAGA,non_fixed,true,Punto playa/movil o localizacion no equivalente automaticamente al Garbigune fijo; revisar criterio operativo.
+GETXO EREAGA,GETXO EREAGA,non_fixed,true,Punto playa/movil o localizacion no equivalente automaticamente al Garbigune fijo; revisar criterio operativo.
+GORLIZ APARCAMIENTO PLAYA,GORLIZ APARCAMIENTO PLAYA,non_fixed,true,Punto playa/movil o localizacion no equivalente automaticamente a un Garbigune fijo; revisar criterio operativo.
+GORLIZ CERVECERA KILIMANJARO,GORLIZ CERVECERA KILIMANJARO,non_fixed,true,Punto playa/movil o localizacion no equivalente automaticamente a un Garbigune fijo; revisar criterio operativo.
+LAGA,LAGA,non_fixed,true,Punto playa/movil; revisar si debe vincularse a una ruta o Garbigune operativo.
+KARRASPIO,KARRASPIO,non_fixed,true,Punto playa/movil; revisar si debe vincularse a una ruta o Garbigune operativo.
+ZIERBENA,ZIERBENA,non_fixed,true,Punto playa/movil o municipio externo; revisar criterio operativo.
+ISPASTER,ISPASTER,non_fixed,true,Punto playa/movil o municipio externo; revisar criterio operativo.
+BUSTURIA,BUSTURIA,non_fixed,true,Punto playa/movil o municipio externo; revisar criterio operativo.
+ONDARROA ARRIGORRI,ONDARROA ARRIGORRI,non_fixed,true,Punto playa/movil; revisar criterio operativo.
+CONTENOR,CONTENOR,quality,true,Valor posiblemente mal escrito o incompleto; revisar fuente.
+SIN GARBIGUNE,SIN GARBIGUNE,quality,true,Valor de ausencia de garbigune; no debe cruzar con dim_garbigunes.

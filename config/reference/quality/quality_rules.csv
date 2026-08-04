@@ -1,0 +1,6 @@
+rule_key,domain,metric,severity,threshold_value,threshold_unit,action,description,active
+aw_weight_max_individual_kg,captacion_aw,peso_individual_kg,warning,50000,kg,Enviar a revision cliente,Entradas AW con peso individual negativo o superior al umbral se mantienen en conteos y su kg queda en cuarentena temporal.,true
+aw_cp_geo_match_min_share,captacion_aw,geo_kg_share,warning,50,percent,Revisar CP sin geometria,Porcentaje minimo de kg AW con CP que cruza con el GeoJSON de codigos postales de Bizkaia.,true
+salidas_required_fields,salidas_transporte,campos_criticos_vacios,warning,0,rows,Completar campos criticos,Control de garbigune residuo vehiculo y conductor vacios en salidas transportadas.,true
+salidas_no_route_max_share,salidas_transporte,sin_ruta_share,warning,0.5,percent,Revisar mapeo de rutas,Porcentaje maximo aceptable de servicios de salida con ruta SIN RUTA.,true
+incidencias_scope_min_rows,incidencias_flota,garbigunes_scope_rows,info,1,rows,Confirmar ambito,Debe existir al menos una incidencia en el ambito Transporte de Garbigunes o Garbigunes.,true

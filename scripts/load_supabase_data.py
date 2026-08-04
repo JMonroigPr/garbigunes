@@ -19,8 +19,11 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-INPUT = ROOT / "input_data"
-DASHBOARD = ROOT / "dashboard"
+from scripts.data_paths import external_data_root, path_label, resolve_source_path
+
+DATA_ROOT = external_data_root()
+INPUT = DATA_ROOT / "incoming" / "original_input_data_20260803"
+LEGACY_DASHBOARD = ROOT / "apps" / "legacy-dashboard"
 DATA_SOURCE_CONFIG = ROOT / "config" / "data_sources.json"
 DATA_SOURCES = json.loads(DATA_SOURCE_CONFIG.read_text(encoding="utf-8"))["sources"] if DATA_SOURCE_CONFIG.exists() else {}
 
@@ -64,15 +67,15 @@ TABLE_DELETE_FILTERS = {
 
 def config_path(domain: str, key: str, fallback: Path) -> Path:
     value = DATA_SOURCES.get(domain, {}).get(key)
-    return ROOT / value if value else fallback
+    return resolve_source_path(value) if value else fallback
 
 
 GARBIKUNE_LOCATIONS_INPUT = config_path("garbigune_locations", "current", INPUT / "garbigunes_ubicaciones.csv")
-SITE_ALIASES_INPUT = config_path("site_aliases", "current", ROOT / "data" / "reference" / "garbigunes" / "site_aliases.csv")
+SITE_ALIASES_INPUT = config_path("site_aliases", "current", ROOT / "config" / "reference" / "garbigunes" / "site_aliases.csv")
 AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
-AW_EQUIVALENCES_INPUT = config_path("aw_equivalences", "current", ROOT / "data" / "reference" / "residuos" / "residuos_salida_aw_equivalencias.csv")
-QUALITY_RULES_INPUT = config_path("quality_rules", "current", ROOT / "data" / "reference" / "quality" / "quality_rules.csv")
-AW_WEIGHT_ANOMALIES_INPUT = config_path("aw_weight_anomalies", "current", ROOT / "data" / "processed" / "quality" / "aw_weight_anomalies.csv")
+AW_EQUIVALENCES_INPUT = config_path("aw_equivalences", "current", ROOT / "config" / "reference" / "residuos" / "residuos_salida_aw_equivalencias.csv")
+QUALITY_RULES_INPUT = config_path("quality_rules", "current", ROOT / "config" / "reference" / "quality" / "quality_rules.csv")
+AW_WEIGHT_ANOMALIES_INPUT = config_path("aw_weight_anomalies", "current", DATA_ROOT / "processed" / "quality" / "aw_weight_anomalies.csv")
 
 
 class SupabaseError(RuntimeError):
@@ -361,14 +364,14 @@ def iter_dim_flota() -> Iterator[dict[str, Any]]:
             "service": clean_text(row.get("Servicio")),
             "registration_date": clean_date(row.get("Fecha matriculación")),
             "observations": clean_text(row.get("Observaciones")),
-            "source_file": str(source.relative_to(ROOT)),
+            "source_file": path_label(source),
             "active": True,
         }
 
 
 def iter_fact_salidas_transporte() -> Iterator[dict[str, Any]]:
     helpers = build_helpers()
-    path = DASHBOARD / "dashboard_records.json.gz"
+    path = LEGACY_DASHBOARD / "dashboard_records.json.gz"
     payload = read_gzip_json(path)
     for row in payload.get("records", {}).get("pesadas", []):
         service_date = clean_text(row.get("date"))
@@ -392,7 +395,7 @@ def iter_fact_salidas_transporte() -> Iterator[dict[str, Any]]:
 
 
 def iter_fact_captacion_aw() -> Iterator[dict[str, Any]]:
-    path = DASHBOARD / "aw_capture_aggregates.json.gz"
+    path = LEGACY_DASHBOARD / "aw_capture_aggregates.json.gz"
     payload = read_gzip_json(path)
     for row in payload.get("records", []):
         entry_date = clean_text(row.get("date"))
@@ -424,7 +427,7 @@ def iter_fact_captacion_aw() -> Iterator[dict[str, Any]]:
 def iter_fact_incidencias_flota() -> Iterator[dict[str, Any]]:
     helpers = build_helpers()
     frame, sources = helpers.read_incidencias_sources()
-    source_file = " + ".join(str(path.relative_to(ROOT)) for path in sources)
+    source_file = " + ".join(path_label(path) for path in sources)
     for _, row in frame.iterrows():
         incident_date = clean_date(row.get("Fecha"))
         area = helpers.clean_key(row.get("Area"))
@@ -463,7 +466,7 @@ def iter_fact_incidencias_flota() -> Iterator[dict[str, Any]]:
 def iter_fact_refuerzos() -> Iterator[dict[str, Any]]:
     helpers = build_helpers()
     frame, sources = helpers.read_refuerzos_sources()
-    source_file = " + ".join(str(path.relative_to(ROOT)) for path in sources)
+    source_file = " + ".join(path_label(path) for path in sources)
     for _, row in frame.iterrows():
         reinforcement_date = clean_date(row.get("Fecha"))
         place = helpers.clean_key(row.get("Lugar"))

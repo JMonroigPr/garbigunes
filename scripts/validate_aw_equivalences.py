@@ -3,15 +3,20 @@ from __future__ import annotations
 import csv
 import gzip
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RECORDS_INPUT = ROOT / "dashboard" / "dashboard_records.json.gz"
-EQUIVALENCES_INPUT = ROOT / "data" / "reference" / "residuos" / "residuos_salida_aw_equivalencias.csv"
-OUTPUT_DIR = ROOT / "data" / "processed" / "quality"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from scripts.data_paths import external_data_root, path_label
+
+RECORDS_INPUT = ROOT / "apps" / "legacy-dashboard" / "dashboard_records.json.gz"
+EQUIVALENCES_INPUT = ROOT / "config" / "reference" / "residuos" / "residuos_salida_aw_equivalencias.csv"
+OUTPUT_DIR = external_data_root() / "processed" / "quality"
 CSV_OUTPUT = OUTPUT_DIR / "aw_equivalence_quality.csv"
 JSON_OUTPUT = OUTPUT_DIR / "aw_equivalence_quality.json"
 
@@ -114,8 +119,8 @@ def main() -> int:
     print(f"Coverage: {payload['covered_tons']:,.1f} t of {payload['total_tons']:,.1f} t ({payload['covered_pct']:.2f}%)")
     print(f"Missing wastes: {', '.join(payload['missing_wastes']) or 'none'}")
     print(f"Unweighted duplicate risk: {payload['unweighted_duplicate_tons']:,.1f} t ({payload['unweighted_duplicate_pct_total']:.2f}% of total)")
-    print(f"Wrote {CSV_OUTPUT.relative_to(ROOT)}")
-    print(f"Wrote {JSON_OUTPUT.relative_to(ROOT)}")
+    print(f"Wrote {path_label(CSV_OUTPUT)}")
+    print(f"Wrote {path_label(JSON_OUTPUT)}")
     return 0
 
 

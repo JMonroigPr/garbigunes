@@ -16,7 +16,11 @@ import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_LOG_DIR = ROOT / "data" / "processed" / "pipeline_logs"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from scripts.data_paths import external_data_root, path_label
+
+DEFAULT_LOG_DIR = external_data_root() / "processed" / "pipeline_logs"
 DEFAULT_TABLES = (
     "dim_garbigunes",
     "dim_flota",
@@ -54,7 +58,7 @@ def read_env_file(path: Path) -> None:
 
 
 def read_dashboard_metadata() -> dict[str, Any]:
-    data_file = ROOT / "dashboard" / "dashboard_data.js"
+    data_file = ROOT / "apps" / "legacy-dashboard" / "dashboard_data.js"
     if not data_file.exists():
         return {}
     text = data_file.read_text(encoding="utf-8")
@@ -175,8 +179,8 @@ def register_etl_run(payload: dict[str, Any], args: argparse.Namespace, json_pat
         "active_sources": metadata.get("activeSources", {}),
         "source_files": metadata.get("sourceFiles", []),
         "data_sources": payload.get("dataSources", {}),
-        "log_json_path": str(json_path.relative_to(ROOT)),
-        "log_markdown_path": str(md_path.relative_to(ROOT)),
+        "log_json_path": path_label(json_path),
+        "log_markdown_path": path_label(md_path),
         "error_message": first_error_message(payload),
     }
 
@@ -383,8 +387,8 @@ def main() -> int:
         write_markdown(md_path, payload)
 
     print(f"Pipeline status: {status}")
-    print(f"JSON log: {json_path.relative_to(ROOT)}")
-    print(f"Markdown log: {md_path.relative_to(ROOT)}")
+    print(f"JSON log: {path_label(json_path)}")
+    print(f"Markdown log: {path_label(md_path)}")
     if payload.get("registration"):
         registration = payload["registration"]
         if registration.get("status") == "ok":

@@ -4,6 +4,7 @@ import json
 import gzip
 import math
 import re
+import sys
 import unicodedata
 from collections import Counter
 from datetime import date, datetime
@@ -18,28 +19,33 @@ from docx import Document
 
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUT = ROOT / "input_data"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from scripts.data_paths import external_data_root, path_label, resolve_source_path
+
+DATA_ROOT = external_data_root()
+INPUT = DATA_ROOT / "incoming" / "original_input_data_20260803"
 UPDATED_INPUT = INPUT / "datos_actualizados"
-DATA_ROOT = ROOT / "data"
 DATA_SOURCE_CONFIG = ROOT / "config" / "data_sources.json"
 DATA_SOURCES = json.loads(DATA_SOURCE_CONFIG.read_text(encoding="utf-8"))["sources"] if DATA_SOURCE_CONFIG.exists() else {}
-OUTPUT = ROOT / "dashboard" / "dashboard_data.js"
-QUALITY_OUTPUT = ROOT / "dashboard" / "data_quality_report.json"
-RECORDS_OUTPUT = ROOT / "dashboard" / "dashboard_records.json.gz"
-RECORDS_SCRIPT_OUTPUT = ROOT / "dashboard" / "dashboard_records.js"
-CAPTURE_GEOJSON_OUTPUT = ROOT / "dashboard" / "bizkaia_codigos_postales.geojson"
-AW_AGGREGATES_OUTPUT = ROOT / "dashboard" / "aw_capture_aggregates.json.gz"
+LEGACY_DASHBOARD = ROOT / "apps" / "legacy-dashboard"
+OUTPUT = LEGACY_DASHBOARD / "dashboard_data.js"
+QUALITY_OUTPUT = LEGACY_DASHBOARD / "data_quality_report.json"
+RECORDS_OUTPUT = LEGACY_DASHBOARD / "dashboard_records.json.gz"
+RECORDS_SCRIPT_OUTPUT = LEGACY_DASHBOARD / "dashboard_records.js"
+CAPTURE_GEOJSON_OUTPUT = LEGACY_DASHBOARD / "bizkaia_codigos_postales.geojson"
+AW_AGGREGATES_OUTPUT = LEGACY_DASHBOARD / "aw_capture_aggregates.json.gz"
 AW_MAX_ENTRY_KG = 50_000
-AW_ANOMALIES_OUTPUT = ROOT / "data" / "processed" / "quality" / "aw_weight_anomalies.csv"
-AW_ANOMALIES_DASHBOARD_OUTPUT = ROOT / "dashboard" / "aw_weight_anomalies.csv"
+AW_ANOMALIES_OUTPUT = DATA_ROOT / "processed" / "quality" / "aw_weight_anomalies.csv"
+AW_ANOMALIES_DASHBOARD_OUTPUT = LEGACY_DASHBOARD / "aw_weight_anomalies.csv"
 def config_path(domain: str, key: str, fallback: Path) -> Path:
     value = DATA_SOURCES.get(domain, {}).get(key)
-    return ROOT / value if value else fallback
+    return resolve_source_path(value) if value else fallback
 
 
 def config_paths(domain: str, key: str, fallback: list[Path]) -> list[Path]:
     values = DATA_SOURCES.get(domain, {}).get(key)
-    return [ROOT / value for value in values] if values else fallback
+    return [resolve_source_path(value) for value in values] if values else fallback
 
 
 AW_FAMILIES_INPUT = config_path("aw_families", "current", INPUT / "residuos_aw_familias.csv")
@@ -75,7 +81,11 @@ SITE_ALIASES_INPUT = config_path("site_aliases", "current", INPUT / "site_aliase
 CP_GEOJSON_INPUT = config_path("cp_geojson", "current", INPUT / "bizkaia_codigos_postales.geojson")
 COBERTURAS_UPDATED_INPUT = config_path("coberturas", "current", UPDATED_INPUT / "1.Coberturas" / "Coberturas-solo_GAR.xlsx")
 AW_UPDATED_INPUT = config_path("captacion_aw", "update_not_used", UPDATED_INPUT / "2. Entradas garbigunes" / "DetallesEntradasGarbiker.xlsx")
-PERSONAL_HISTORICAL_INPUT = ROOT / DATA_SOURCES.get("personal_historico", {}).get("current", "data/raw/historical/recursos/AST_Datos históricos personal Transporte Garbigune.docx")
+PERSONAL_HISTORICAL_INPUT = config_path(
+    "personal_historico",
+    "current",
+    DATA_ROOT / "raw" / "historical" / "recursos" / "AST_Datos históricos personal Transporte Garbigune.docx",
+)
 
 ODS_NS = {
     "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
@@ -162,7 +172,7 @@ def existing_paths(paths: list[Path]) -> list[Path]:
 
 
 def source_label(paths: list[Path]) -> str:
-    return " + ".join(str(path.relative_to(ROOT)) for path in paths)
+    return " + ".join(path_label(path) for path in paths)
 
 
 def parse_dates(series: pd.Series) -> pd.Series:
@@ -609,7 +619,7 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
                     anomalous_weight_kg += original_kg
                     valid_kg = 0.0
                     anomaly = {
-                        "source_file": str(source.relative_to(ROOT)),
+                        "source_file": path_label(source),
                         "source_sheet": sheet.title,
                         "source_row": int(row_number),
                         "fecha": str(parsed_date.date()),
@@ -747,7 +757,7 @@ def read_aw_aggregate_records(source: Path, family_map: dict[str, dict[str, str]
         "anomalousWeightKg": safe_num(anomalous_weight_kg, 2),
         "anomalousWeightMaxKg": int(AW_MAX_ENTRY_KG),
         "anomalousWeightExamples": anomalous_weight_examples,
-        "anomalousWeightFile": str(AW_ANOMALIES_OUTPUT.relative_to(ROOT)),
+        "anomalousWeightFile": path_label(AW_ANOMALIES_OUTPUT),
         "anomalousWeightDashboardFile": AW_ANOMALIES_DASHBOARD_OUTPUT.name,
         "sourceColumns": sorted(raw_columns),
         "from": str(first_date.date()) if first_date is not None else "",
@@ -905,13 +915,13 @@ def build_capture_data() -> dict[str, Any]:
             "geoKgShare": percentage(kg_with_geo, kg_total),
             "geoCpCount": int(len(geo_cps)),
             "unmatchedCps": unmatched_cps,
-            "familySource": str(AW_FAMILIES_INPUT.relative_to(ROOT)),
+            "familySource": path_label(AW_FAMILIES_INPUT),
             "mappedWasteTypes": int(frame.loc[frame["waste"].isin(family_map.keys()), "waste"].nunique()),
             "unmappedWasteTypes": int(len(unmapped_wastes)),
             "unmappedWastes": unmapped_wastes,
             "unmappedSubfamilyTypes": int(len(unmapped_subfamilies)),
             "unmappedSubfamilies": unmapped_subfamilies,
-            "source": str(source.relative_to(ROOT)),
+            "source": path_label(source),
             "rawRowsRead": int(source_meta["rawRowsRead"]),
             "skippedRows": int(source_meta["skippedRows"]),
             "anomalousWeightRows": int(source_meta["anomalousWeightRows"]),
@@ -923,9 +933,9 @@ def build_capture_data() -> dict[str, Any]:
             "aggregateFile": AW_AGGREGATES_OUTPUT.name,
             "entryMetricMethod": aggregate_payload["entryMetricMethod"],
             "timeFilterNote": aggregate_payload["timeFilterNote"],
-            "geoSource": str(CP_GEOJSON_INPUT.relative_to(ROOT)),
+            "geoSource": path_label(CP_GEOJSON_INPUT),
             "geoFile": "bizkaia_codigos_postales.geojson",
-            "locationSource": str(GARBIKUNE_LOCATIONS_INPUT.relative_to(ROOT)),
+            "locationSource": path_label(GARBIKUNE_LOCATIONS_INPUT),
             "scopeNote": "Histórico de entradas AW; no se suma a salidas transportadas.",
         },
         "records": [],
@@ -1303,22 +1313,28 @@ def build() -> dict[str, Any]:
 
     return {
         "generatedAt": datetime.now().isoformat(timespec="seconds"),
-        "sourceFiles": sorted(str(path.relative_to(ROOT)) for path in DATA_ROOT.rglob("*") if path.is_file() and not path.name.startswith("~$") and path.name != ".DS_Store"),
+        "sourceFiles": sorted(
+            path_label(path)
+            for source_root in (DATA_ROOT / "raw", DATA_ROOT / "reference")
+            if source_root.exists()
+            for path in source_root.rglob("*")
+            if path.is_file() and not path.name.startswith("~$") and path.name != ".DS_Store"
+        ),
         "activeSources": {
-            "policy": "Histórico principal en data/raw/historical + actualización parcial en data/raw/updates; en solapes se priorizan las actualizaciones.",
+            "policy": "Histórico principal y actualizaciones en la raíz externa de datos; en solapes se priorizan las actualizaciones.",
             "pesadas": source_label(pesadas_sources),
             "incidencias": source_label(incidencias_sources),
-            "flota": str(flota_source.relative_to(ROOT)),
-            "rutas": str(preferred_existing(RUTAS_UPDATED_INPUT, RUTAS_INPUT).relative_to(ROOT)),
-            "convenios": str(CONVENIOS_INPUT.relative_to(ROOT)),
+            "flota": path_label(flota_source),
+            "rutas": path_label(preferred_existing(RUTAS_UPDATED_INPUT, RUTAS_INPUT)),
+            "convenios": path_label(CONVENIOS_INPUT),
             "movil": source_label(movil_sources),
             "refuerzos": source_label(refuerzos_sources),
             "captacionAw": capture["meta"]["source"],
             "captacionAwPolicy": "Se mantiene la fuente histórica principal porque conserva C.P. y municipio origen; DetallesEntradasGarbiker.xlsx no sustituye esa información para el análisis de captación.",
-            "familiasAw": str(AW_FAMILIES_INPUT.relative_to(ROOT)),
-            "equivalenciasAw": str(AW_EQUIVALENCES_INPUT.relative_to(ROOT)),
-            "garbiguneLocations": str(GARBIKUNE_LOCATIONS_INPUT.relative_to(ROOT)),
-            "cpGeojson": str(CP_GEOJSON_INPUT.relative_to(ROOT)),
+            "familiasAw": path_label(AW_FAMILIES_INPUT),
+            "equivalenciasAw": path_label(AW_EQUIVALENCES_INPUT),
+            "garbiguneLocations": path_label(GARBIKUNE_LOCATIONS_INPUT),
+            "cpGeojson": path_label(CP_GEOJSON_INPUT),
         },
         "records": {
             "pesadas": pesadas_records.to_dict("records"),

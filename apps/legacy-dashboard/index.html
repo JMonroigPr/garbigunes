@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Garbiker | Dashboard Garbigunes</title>
+    <link rel="stylesheet" href="styles.css?v=20260803-aw-anomalies" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Garbiker · Garbigunes Bizkaia</p>
+        <h1>Eficiencia de operaciones de recogida</h1>
+      </div>
+      <div class="header-meta">
+        <span id="coverage"></span>
+        <span id="generated"></span>
+        <div class="view-mode-toggle" id="view-mode-toggle" aria-label="Modo de visualización">
+          <button class="active" type="button" data-mode="executive">Ejecutivo</button>
+          <button type="button" data-mode="analyst">Analista</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Secciones del dashboard">
+      <button class="tab active" data-tab="summary" type="button">Resumen operativo</button>
+      <button class="tab" data-tab="sites" type="button">Garbigunes y residuos</button>
+      <button class="tab" data-tab="capture" type="button">Captación AW</button>
+      <button class="tab" data-tab="fleet" type="button">Flota</button>
+      <button class="tab" data-tab="drivers" type="button">Conductores</button>
+      <button class="tab" data-tab="resources" type="button">Recursos</button>
+    </nav>
+
+    <div class="app-body">
+      <aside class="filter-sidebar" aria-label="Filtros globales">
+        <div class="filter-head">
+          <div>
+            <h2>Filtros</h2>
+            <span id="global-filter-summary"></span>
+          </div>
+          <button class="reset-button" id="global-reset" type="button">Restablecer</button>
+        </div>
+
+        <section class="filter-section">
+          <div class="filter-section-head">
+            <h3>Tipo de residuo</h3>
+            <div class="mini-actions">
+              <button id="waste-select-all" type="button">Todos</button>
+              <button id="waste-clear-all" type="button">Ninguno</button>
+              <button class="collapse-toggle" type="button" data-collapse-target="waste-filter-body">−</button>
+            </div>
+          </div>
+          <div class="filter-body" id="waste-filter-body">
+            <div class="residue-buttons" id="global-waste-buttons"></div>
+          </div>
+        </section>
+
+        <section class="filter-section">
+          <div class="filter-section-head">
+            <h3>Intervalo</h3>
+            <div class="mini-actions">
+              <span id="calendar-range-label"></span>
+              <button class="collapse-toggle" type="button" data-collapse-target="date-filter-body">−</button>
+            </div>
+          </div>
+          <div class="filter-body" id="date-filter-body">
+            <div class="month-picker">
+              <div class="month-picker-head">
+                <button id="month-prev-year" type="button" aria-label="Año anterior">‹</button>
+                <div>
+                  <strong id="month-picker-title"></strong>
+                  <span id="month-range-label"></span>
+                </div>
+                <button id="month-next-year" type="button" aria-label="Año siguiente">›</button>
+              </div>
+              <div class="month-grid" id="month-grid"></div>
+            </div>
+            <div class="calendar">
+              <div class="calendar-head">
+                <button id="calendar-prev" type="button" aria-label="Mes anterior">‹</button>
+                <strong id="calendar-title"></strong>
+                <button id="calendar-next" type="button" aria-label="Mes siguiente">›</button>
+              </div>
+              <div class="calendar-weekdays">
+                <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+              </div>
+              <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="filter-section stacked">
+          <div class="filter-section-head full">
+            <h3>Otros filtros</h3>
+            <button class="collapse-toggle" type="button" data-collapse-target="other-filter-body">−</button>
+          </div>
+          <div class="filter-body stacked" id="other-filter-body">
+            <label class="control">
+              <span>Base</span>
+              <select id="global-base"></select>
+            </label>
+            <label class="control">
+              <span>Ruta</span>
+              <select id="global-route"></select>
+            </label>
+            <label class="control">
+              <span>Garbigune</span>
+              <select id="global-site"></select>
+            </label>
+            <label class="control">
+              <span>Vehículo</span>
+              <select id="global-vehicle"></select>
+            </label>
+            <label class="control">
+              <span>Conductor</span>
+              <select id="global-driver"></select>
+            </label>
+          </div>
+        </section>
+      </aside>
+
+      <main>
+      <div class="active-filter-strip">
+        <div id="active-filter-chips" class="filter-chips"></div>
+        <button class="reset-button" id="copy-filter-link" type="button">Copiar enlace</button>
+      </div>
+      <div class="taxonomy-strip" aria-label="Taxonomía de fuentes y métricas">
+        <span class="taxonomy-tag taxonomy-out">Salidas transportadas</span>
+        <span class="taxonomy-tag taxonomy-in">Entradas AW</span>
+        <span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span>
+        <span class="taxonomy-tag taxonomy-incident">Incidencias</span>
+        <span class="taxonomy-tag taxonomy-resource">Recursos</span>
+      </div>
+      <div class="mode-hint" id="mode-hint"></div>
+
+      <section class="panel active" id="summary">
+        <div class="panel-summary" id="summary-panel-summary"></div>
+        <article class="method-card analyst-only">
+          <strong><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Lectura de residuos</strong>
+          <span>Las toneladas, servicios, rutas, vehículos y conductores se calculan con pesadas de salida/transporte desde garbigunes. El detalle AW es una muestra separada de entradas registradas por usuario y se muestra solo como contexto.</span>
+        </article>
+        <article class="card glossary-card analyst-only">
+          <div class="card-head">
+            <h2>Glosario metodológico</h2>
+            <span>Definiciones operativas del dashboard</span>
+          </div>
+          <div class="glossary-grid">
+            <div><strong>Viaje / servicio de salida <button class="info-dot" type="button" aria-label="Un servicio de salida equivale a un registro de pesada de báscula." title="Un servicio de salida equivale a un registro de pesada de báscula.">?</button></strong><p>Registro individual de báscula asociado a una recogida/salida transportada desde un garbigune. En el dashboard se usa “servicio de salida”.</p></div>
+            <div><strong>Entrada <button class="info-dot" type="button" aria-label="Entrada se refiere a registros AW por usuario, no a toneladas transportadas." title="Entrada se refiere a registros AW por usuario, no a toneladas transportadas.">?</button></strong><p>Registro de recepción/alta de residuo en AW. Es una fuente separada y no se suma a las toneladas de salida.</p></div>
+            <div><strong>Salida <button class="info-dot" type="button" aria-label="Salida es residuo transportado y pesado en báscula." title="Salida es residuo transportado y pesado en báscula.">?</button></strong><p>Residuo retirado del garbigune y transportado, medido por pesada de báscula. Alimenta toneladas, rutas, vehículos y conductores.</p></div>
+            <div><strong>Kg/viaje o kg/servicio <button class="info-dot" type="button" aria-label="Kg por servicio mide carga media por registro de salida." title="Kg por servicio mide carga media por registro de salida.">?</button></strong><p>Carga media por servicio de salida: kilos transportados divididos entre registros de báscula del periodo filtrado.</p></div>
+            <div><strong>Score normalizado <button class="info-dot" type="button" aria-label="Score normalizado compara conductores por contexto operativo." title="Score normalizado compara conductores por contexto operativo.">?</button></strong><p>Índice de conductores con referencia 100. Combina carga ajustada por ruta, garbigune y residuo con servicios de salida por día.</p></div>
+          </div>
+        </article>
+        <article class="card analyst-only">
+          <div class="card-head">
+            <h2>Taxonomía de lectura</h2>
+            <span>Qué mide cada bloque</span>
+          </div>
+          <div class="taxonomy-guide">
+            <div><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span><p>Pesadas de báscula: toneladas, servicios, rutas, vehículos, conductores y residuos transportados.</p></div>
+            <div><span class="taxonomy-tag taxonomy-in">Entradas AW</span><p>Muestra de entradas registradas por usuario en AW; no se suma a las toneladas de salida.</p></div>
+            <div><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span><p>Actividad del servicio móvil por garbigune destino y municipio origen.</p></div>
+            <div><span class="taxonomy-tag taxonomy-incident">Incidencias</span><p>Averías e incidencias de flota, comparables con servicios de salida cuando hay vehículo asociado.</p></div>
+            <div><span class="taxonomy-tag taxonomy-resource">Recursos</span><p>Personal, refuerzos, convenios, flota registrada y calidad de datos.</p></div>
+          </div>
+        </article>
+        <div class="kpi-grid" id="summary-kpis"></div>
+        <article class="card executive-card">
+          <div class="card-head">
+            <h2>Conclusiones ejecutivas</h2>
+            <span>Lectura automática del filtro activo</span>
+          </div>
+          <div id="executive-conclusions" class="executive-conclusions"></div>
+        </article>
+        <div class="grid two">
+          <article class="card wide">
+            <div class="card-head">
+              <h2>Evolución mensual</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> T salidas por residuo y servicios</span>
+            </div>
+            <div id="monthly-chart" class="chart"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Top garbigunes</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> T salidas</span>
+            </div>
+            <div id="top-sites-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Top residuos</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Participación por peso</span>
+            </div>
+            <div id="top-waste-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Indicadores de eficiencia</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Lectura rápida</span>
+            </div>
+            <div id="efficiency-notes" class="note-list"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Alertas ejecutivas</h2>
+              <span>Impacto y acción sugerida</span>
+            </div>
+            <div id="diagnostic-notes" class="note-list"></div>
+          </article>
+          <article class="card analyst-only">
+            <div class="card-head">
+              <h2>Calidad y metodología</h2>
+              <span>Lectura de confianza</span>
+            </div>
+            <div id="quality-notes" class="note-list"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Comparativa temporal</h2>
+              <span>Periodo seleccionable</span>
+            </div>
+            <div class="controls">
+              <label class="control small">
+                <span>Comparar</span>
+                <select id="compare-mode">
+                  <option value="previous">Periodo anterior</option>
+                  <option value="mom">Último mes vs mes anterior</option>
+                  <option value="yoy">Último mes vs año anterior</option>
+                </select>
+              </label>
+            </div>
+            <div id="comparative-cards" class="detail-grid"></div>
+          </article>
+          <article class="card analyst-only">
+            <div class="card-head">
+              <h2>Outliers operativos</h2>
+              <span>IQR, valores extremos</span>
+            </div>
+            <div class="table-wrap">
+              <table id="outliers-table"></table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel" id="sites">
+        <div class="panel-summary" id="sites-panel-summary"></div>
+        <article class="method-card analyst-only">
+          <strong><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> <span class="taxonomy-tag taxonomy-in">Entradas AW</span> Entradas vs salidas</strong>
+          <span>En esta pestaña, los rankings y matrices de garbigune/residuo/ruta representan salidas recogidas en báscula. El bloque de entradas AW usa otra fuente y no se suma a esas toneladas.</span>
+        </article>
+        <article class="card executive-card">
+          <div class="card-head">
+            <h2>Lecturas automáticas</h2>
+            <span>Conclusiones del filtro activo</span>
+          </div>
+          <div id="sites-conclusions" class="executive-conclusions"></div>
+        </article>
+        <div class="grid two">
+          <article class="card wide">
+            <div class="card-head">
+              <h2>Garbigunes por carga</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> T salidas, servicios y kg/servicio</span>
+            </div>
+            <div class="table-wrap">
+              <table id="sites-table"></table>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Residuos</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Top por toneladas</span>
+            </div>
+            <div id="waste-share-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <article class="card">
+          <div class="card-head">
+            <h2>Matriz configurable</h2>
+            <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> T salidas y % del total visible</span>
+          </div>
+          <div class="matrix-axis-layout">
+            <label class="matrix-axis-control matrix-col-axis">
+              <span>Columnas</span>
+              <select id="matrix-col-dimension"></select>
+            </label>
+            <div class="table-wrap matrix-axis-table">
+              <table id="matrix-table" class="matrix"></table>
+            </div>
+          </div>
+        </article>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Rutas por carga</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Base/ruta, t salidas y servicios</span>
+            </div>
+            <div id="routes-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Bases operativas</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> T salidas, servicios y centros</span>
+            </div>
+            <div class="table-wrap">
+              <table id="bases-table"></table>
+            </div>
+          </article>
+        </div>
+        <article class="card analyst-only">
+          <div class="card-head">
+            <h2>Detalle de entradas AW</h2>
+            <span><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Muestra de entradas registradas, junio 2026</span>
+          </div>
+          <div id="detail-aw" class="detail-grid"></div>
+        </article>
+      </section>
+
+      <section class="panel" id="capture">
+        <div class="panel-summary" id="capture-panel-summary"></div>
+        <article class="method-card analyst-only">
+          <strong><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Captación territorial</strong>
+          <span>Esta pestaña analiza entradas registradas en AW por código postal de origen, garbigune destino, residuo y tipo de usuario. No se suma a las salidas transportadas ni a los servicios de báscula.</span>
+        </article>
+        <article class="card executive-card">
+          <div class="card-head">
+            <h2>Lecturas automáticas</h2>
+            <span>Captación, flujos y calidad interpretativa</span>
+          </div>
+          <div id="capture-conclusions" class="executive-conclusions"></div>
+        </article>
+        <div id="capture-global-filter-chips" class="filter-chips capture-global-filter-chips"></div>
+        <article class="card analyst-only">
+          <div class="card-head">
+            <h2>Familias de residuos AW</h2>
+            <span><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Taxonomía editable desde input_data/residuos_aw_familias.csv</span>
+          </div>
+          <div id="capture-taxonomy-summary" class="taxonomy-summary"></div>
+          <div id="capture-family-legend" class="family-legend"></div>
+        </article>
+        <article class="card capture-map-card">
+          <div class="card-head">
+            <h2>Mapa de captación por código postal</h2>
+            <span><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Polígonos CP Bizkaia y puntos Garbigune</span>
+          </div>
+          <div class="controls capture-controls">
+            <label class="control small">
+              <span>Garbigune AW</span>
+              <select id="capture-site"></select>
+            </label>
+            <label class="control small">
+              <span>Familia AW</span>
+              <select id="capture-family"></select>
+            </label>
+            <label class="control small">
+              <span>Subfamilia AW</span>
+              <select id="capture-subfamily"></select>
+            </label>
+            <label class="control">
+              <span>Residuo AW</span>
+              <select id="capture-waste"></select>
+            </label>
+            <label class="control small">
+              <span>Tipo usuario</span>
+              <select id="capture-user"></select>
+            </label>
+            <div class="segmented" id="capture-metric" aria-label="Métrica del mapa">
+              <button class="active" type="button" data-metric="kg">Kg</button>
+              <button type="button" data-metric="entries">Entradas</button>
+              <button type="button" data-metric="rows">Líneas</button>
+              <button type="button" data-metric="kg_per_km">Kg/km</button>
+              <button type="button" data-metric="entries_per_km">Entr./km</button>
+            </div>
+            <button class="reset-button" id="capture-reset" type="button">Restablecer</button>
+            <div class="control-summary" id="capture-filter-summary"></div>
+          </div>
+          <div id="capture-map" class="capture-map"></div>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h2>Flujos CP → Garbigune</h2>
+            <span><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Observado frente al Garbigune más cercano</span>
+          </div>
+          <div class="controls inline-controls">
+            <div class="segmented compact-segmented" id="capture-flow-review" aria-label="Revisión de flujos CP a Garbigune">
+              <button class="active" type="button" data-flow-review="all">Todos</button>
+              <button type="button" data-flow-review="off">Solo no más cercano</button>
+              <button type="button" data-flow-review="nearest">Solo más cercano</button>
+              <button type="button" data-flow-review="review">Solo revisar</button>
+            </div>
+          </div>
+          <div id="capture-flow-review-kpis" class="detail-grid"></div>
+          <div class="mini-section-title">
+            <div>
+              <strong>Casos prioritarios</strong>
+              <span>Top flujos “Revisar” por impacto t·km</span>
+            </div>
+            <button class="export-button" id="capture-priority-export" type="button">Exportar casos CSV</button>
+          </div>
+          <div id="capture-priority-cases" class="priority-cases"></div>
+          <div class="table-wrap analyst-scroll">
+            <table id="capture-flows-table"></table>
+          </div>
+        </article>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Ranking de CP origen</h2>
+              <span><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Peso, entradas y composición</span>
+            </div>
+            <div class="table-wrap">
+              <table id="capture-cp-table"></table>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Garbigunes destino AW</h2>
+              <span><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Puntos con coordenadas Garbiker</span>
+            </div>
+            <div id="capture-sites-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2 id="capture-composition-title">Composición por familia AW</h2>
+              <span id="capture-composition-subtitle"><span class="taxonomy-tag taxonomy-in">Entradas AW</span> Familias de residuos, con detalle granular en filtros y tablas</span>
+            </div>
+            <div class="segmented compact-segmented" id="capture-composition-level" aria-label="Nivel de composición AW">
+              <button class="active" type="button" data-level="family">Familia</button>
+              <button type="button" data-level="subfamily">Subfamilia</button>
+              <button type="button" data-level="waste">Residuo</button>
+            </div>
+            <div id="capture-waste-chart" class="chart compact"></div>
+          </article>
+          <article class="card analyst-only">
+            <div class="card-head">
+              <h2>Calidad geográfica</h2>
+              <span>CP informados, cruce GeoJSON y sin CP</span>
+            </div>
+            <div id="capture-quality-notes" class="note-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel" id="fleet">
+        <div class="panel-summary" id="fleet-panel-summary"></div>
+        <article class="method-card analyst-only">
+          <strong><span class="taxonomy-tag taxonomy-incident">Incidencias</span> <span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Nota temporal</strong>
+          <span id="fleet-time-window-note"></span>
+        </article>
+        <article class="card executive-card">
+          <div class="card-head">
+            <h2>Lecturas automáticas</h2>
+            <span>Incidencias, vehículos y mantenimiento</span>
+          </div>
+          <div id="fleet-conclusions" class="executive-conclusions"></div>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h2>Tendencia mensual de incidencias</h2>
+            <span><span class="taxonomy-tag taxonomy-incident">Incidencias</span> Incidencias y servicios de salida</span>
+          </div>
+          <div id="incident-trend-chart" class="chart"></div>
+        </article>
+        <div class="grid two">
+          <article class="card wide">
+            <div class="card-head">
+              <h2>Productividad por vehículo</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> + <span class="taxonomy-tag taxonomy-incident">Incidencias</span></span>
+            </div>
+            <div class="table-wrap">
+              <table id="fleet-table"></table>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Mix de combustible</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Vehículos registrados</span>
+            </div>
+            <div id="fuel-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <div class="grid three incident-grid">
+          <article class="card incident-stack-card">
+            <div class="card-head">
+              <h2>Tipos de avería</h2>
+              <span><span class="taxonomy-tag taxonomy-incident">Incidencias</span> Barras apiladas por composición</span>
+            </div>
+            <div class="segmented compact-segmented" id="incident-breakdown" aria-label="Desglose de tipos de avería">
+              <button class="active" type="button" data-breakdown="subgroup">Subgrupos</button>
+              <button type="button" data-breakdown="workshop">Talleres</button>
+            </div>
+            <div id="incident-types-chart" class="chart compact incident-stack-chart"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Subgrupos críticos</h2>
+              <span><span class="taxonomy-tag taxonomy-incident">Incidencias</span> Histórico Garbigunes 2022-2026 YTD</span>
+            </div>
+            <div id="incident-subgroups-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Talleres</h2>
+              <span><span class="taxonomy-tag taxonomy-incident">Incidencias</span> Proveedor 2022-2026 YTD</span>
+            </div>
+            <div id="workshops-chart" class="chart compact"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel" id="drivers">
+        <div class="panel-summary" id="drivers-panel-summary"></div>
+        <article class="card executive-card">
+          <div class="card-head">
+            <h2>Lecturas automáticas</h2>
+            <span>Productividad, estabilidad y confianza</span>
+          </div>
+          <div id="drivers-conclusions" class="executive-conclusions"></div>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h2>Comparabilidad de conductores</h2>
+            <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Muestra mínima y perfil operativo</span>
+          </div>
+          <div class="controls inline-controls">
+            <label class="control small">
+              <span>Mínimo días</span>
+              <select id="driver-min-days">
+                <option value="5">5 días</option>
+                <option value="10" selected>10 días</option>
+                <option value="20">20 días</option>
+                <option value="50">50 días</option>
+              </select>
+            </label>
+          </div>
+          <div id="driver-profile-summary" class="detail-grid"></div>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h2>Clusters de perfiles</h2>
+            <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Clasificación automática por actividad, carga y estabilidad</span>
+          </div>
+          <div class="table-wrap">
+            <table id="driver-clusters-table"></table>
+          </div>
+        </article>
+        <div class="grid two driver-scatter-grid">
+          <article class="card driver-scatter-card">
+            <div class="card-head">
+              <h2>Servicios de salida</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Servicios salida × días trabajados</span>
+            </div>
+            <div id="driver-services-chart" class="chart compact driver-scatter-chart"></div>
+          </article>
+          <article class="card driver-scatter-card">
+            <div class="card-head">
+              <h2>Perfil de carga</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Kg/servicio × servicios/día</span>
+            </div>
+            <div id="driver-load-chart" class="chart compact driver-scatter-chart"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Eficiencia ajustada</h2>
+              <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Score normalizado</span>
+            </div>
+            <div id="driver-productivity-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <article class="card analyst-only">
+          <div class="card-head">
+            <h2>Lectura del score normalizado</h2>
+            <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Contexto ruta + garbigune + residuo</span>
+          </div>
+          <div class="note-list">
+            <div class="note">
+              <strong>100 es la referencia contextual</strong>
+              <span>La carga de cada servicio de salida se compara contra la media de su combinación de ruta, garbigune y residuo dentro del filtro global activo, con fallback a garbigune + residuo. El score combina 55% carga ajustada y 45% servicios de salida/día relativo.</span>
+            </div>
+            <div class="note">
+              <strong>Clusters de perfil operativo</strong>
+              <span>La clasificación automática agrupa perfiles por muestra, servicios, días, kg/servicio, score ajustado y estabilidad. No es una evaluación personal: sirve para segmentar patrones de trabajo y decidir qué casos merecen comparación o revisión.</span>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h2>Eficiencia por conductor</h2>
+            <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> Días, servicios de salida, carga media</span>
+          </div>
+          <div class="table-wrap">
+            <table id="drivers-table"></table>
+          </div>
+        </article>
+        <article class="card analyst-only">
+          <div class="card-head">
+            <h2>Composición de residuos por conductor</h2>
+            <span><span class="taxonomy-tag taxonomy-out">Salidas transportadas</span> T salidas por fracción</span>
+          </div>
+          <div class="table-wrap">
+            <table id="driver-waste-table" class="matrix"></table>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel" id="resources">
+        <div class="panel-summary" id="resources-panel-summary"></div>
+        <article class="card executive-card">
+          <div class="card-head">
+            <h2>Lecturas automáticas</h2>
+            <span>Refuerzos, móvil, convenios y calidad</span>
+          </div>
+          <div id="resources-conclusions" class="executive-conclusions"></div>
+        </article>
+        <div class="section-heading">
+          <h2>Personal y refuerzos</h2>
+          <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Capacidad de cobertura operativa</span>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Refuerzos por año</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> 2019-2026</span>
+            </div>
+            <div id="ref-year-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Refuerzos por lugar</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Top centros</span>
+            </div>
+            <div id="ref-place-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Horas históricas</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Personal transporte</span>
+            </div>
+            <div class="table-wrap">
+              <table id="personal-table"></table>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Personas que cubren refuerzos</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Top 10</span>
+            </div>
+            <div id="people-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <div class="section-heading">
+          <h2>Garbigune móvil</h2>
+          <span><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Archivo GarbigunesMovil</span>
+        </div>
+        <article class="method-card analyst-only">
+          <strong><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Alcance Garbigune móvil</strong>
+          <span id="mobile-integration-note">Este bloque no forma parte de las pesadas de salida por residuo. Resume movimientos del servicio móvil por garbigune destino y municipio origen.</span>
+        </article>
+        <article class="card analyst-only">
+          <div class="card-head">
+            <h2>Integración del móvil</h2>
+            <span><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Diagnóstico de campos</span>
+          </div>
+          <div id="mobile-integration-summary" class="detail-grid"></div>
+        </article>
+        <div class="grid two analyst-only">
+          <article class="card">
+            <div class="card-head">
+              <h2>Destinos del móvil</h2>
+              <span><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Garbigunes destino</span>
+            </div>
+            <div id="mobile-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Origen del móvil</h2>
+              <span><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Municipios origen</span>
+            </div>
+            <div class="table-wrap">
+              <table id="mobile-origins-table"></table>
+            </div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Movimientos por mes</h2>
+              <span><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Evolución mensual</span>
+            </div>
+            <div id="mobile-month-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Movimientos por conductor</h2>
+              <span><span class="taxonomy-tag taxonomy-mobile">Movimientos móvil</span> Actividad registrada</span>
+            </div>
+            <div id="mobile-driver-chart" class="chart compact"></div>
+          </article>
+        </div>
+        <div class="section-heading">
+          <h2>Cobertura municipal</h2>
+          <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Convenios Garbigunes 2026</span>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Estado de convenios</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Municipios y población</span>
+            </div>
+            <div id="convenios-chart" class="chart compact"></div>
+          </article>
+          <article class="card">
+            <div class="card-head">
+              <h2>Ayuntamientos</h2>
+              <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Estado de convenio</span>
+            </div>
+            <div class="table-wrap">
+              <table id="convenios-table"></table>
+            </div>
+          </article>
+        </div>
+        <div class="section-heading">
+          <h2>Calidad de datos</h2>
+          <span><span class="taxonomy-tag taxonomy-resource">Recursos</span> Reporte automático generado en build</span>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head">
+              <h2>Checks de calidad</h2>
+              <span>Estado, volumen y porcentaje afectado</span>
+            </div>
+            <div class="table-wrap">
+              <table id="quality-report-table"></table>
+            </div>
+          </article>
+          <article class="card analyst-only">
+            <div class="card-head">
+              <h2>Resumen de arquitectura</h2>
+              <span>Cálculo analítico preprocesado</span>
+            </div>
+            <div id="data-architecture-notes" class="note-list"></div>
+          </article>
+        </div>
+      </section>
+      </main>
+    </div>
+    <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+
+    <script src="dashboard_data.js?v=20260803-aw-anomalies"></script>
+    <script src="app.js?v=20260803-aw-anomalies"></script>
+  </body>
+</html>

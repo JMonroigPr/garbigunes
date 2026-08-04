@@ -1,0 +1,11 @@
+.vercel
+
+# Artefactos analiticos generados localmente. El dashboard legado publicado
+# conserva su propia copia; no forman parte del codigo fuente del piloto.
+dashboard_data.js
+dashboard_records.js
+dashboard_records.json.gz
+data_quality_report.json
+aw_capture_aggregates.json.gz
+aw_weight_anomalies.csv
+bizkaia_codigos_postales.geojson

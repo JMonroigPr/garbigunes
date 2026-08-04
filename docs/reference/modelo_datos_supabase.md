@@ -9,7 +9,7 @@ Este documento describe la capa analitica `analytics` del proyecto Garbigunes. E
 - Las tablas `quality_*` conservan incidencias de calidad para revision, sin borrar evidencias.
 - Las vistas `v_*` son agregados genericos de bajo acoplamiento: sirven para dashboards, QA y exploracion, pero no representan tarjetas concretas.
 - Las vistas `v_public_*` son la superficie recomendada para consultas desde Vercel con `anon/publishable key`: excluyen conductores, matriculas, codigos internos y respuestas de cliente.
-- Los ficheros pesados originales permanecen en `data/raw`; Supabase guarda datos limpios o agregados adecuados para consulta.
+- Los ficheros pesados originales permanecen fuera del repositorio, en `GARBIKER_DATA_DIR`; Supabase guarda datos limpios o agregados adecuados para consulta.
 
 ## Fuentes
 
@@ -122,7 +122,7 @@ Campos clave:
 - `log_json_path`, `log_markdown_path`
 - `error_message`
 
-Uso: trazabilidad de cargas. Permite saber que fuentes se usaron, cuantas filas se cargaron por tabla y si la validacion post-carga termino correctamente. Los logs completos permanecen en `data/processed/pipeline_logs/`; Supabase conserva el resumen consultable.
+Uso: trazabilidad de cargas. Permite saber que fuentes se usaron, cuantas filas se cargaron por tabla y si la validacion post-carga termino correctamente. Los logs completos permanecen en `GARBIKER_DATA_DIR/processed/pipeline_logs/`; Supabase conserva el resumen consultable.
 
 ## Nuevas tablas de calidad y recursos
 
@@ -251,7 +251,7 @@ La politica recomendada es:
 
 ## Flujo recomendado
 
-1. Actualizar ficheros en `data/raw` o `data/reference`.
+1. Actualizar fuentes pesadas en `GARBIKER_DATA_DIR/raw` o `GARBIKER_DATA_DIR/reference`; las configuraciones CSV editables viven en `config/reference`.
 2. Regenerar artefactos compactos:
 
 ```bash
@@ -264,7 +264,7 @@ La politica recomendada es:
 /Users/javiermonroig/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 scripts/run_data_pipeline.py
 ```
 
-El pipeline ejecuta build, carga y validacion, y guarda logs en `data/processed/pipeline_logs/`.
+El pipeline ejecuta build, carga y validacion, y guarda logs en `GARBIKER_DATA_DIR/processed/pipeline_logs/`.
 Tambien inserta un resumen auditable en `analytics.etl_load_runs`.
 
 4. Si se quiere validar manualmente:
@@ -285,5 +285,5 @@ Validar cobertura y ponderacion de equivalencias salida -> AW:
 
 Genera:
 
-- `data/processed/quality/aw_equivalence_quality.csv`
-- `data/processed/quality/aw_equivalence_quality.json`
+- `GARBIKER_DATA_DIR/processed/quality/aw_equivalence_quality.csv`
+- `GARBIKER_DATA_DIR/processed/quality/aw_equivalence_quality.json`

@@ -6,17 +6,6 @@ venv/
 .env
 .env.*
 !.env.example
-input_data/
-
-# GitHub rejects files over 100 MB in normal Git.
-# Keep this source workbook locally or add it later with Git LFS.
-input_data/Registro detalles residuos_2026-2018.xlsx
-data/raw/historical/entradas_aw/Registro detalles residuos_2026-2018.xlsx
-
-# Local immutable backup of received sources. Do not version duplicate raw data.
-data_archive/
-
-# Generated pipeline execution logs.
-data/processed/pipeline_logs/*.json
-data/processed/pipeline_logs/*.md
-!data/processed/pipeline_logs/.gitkeep
+# Frozen local copies of deployable prototypes. The working legacy app remains
+# under apps/legacy-dashboard; snapshots are intentionally local-only.
+archive/*/dashboard/

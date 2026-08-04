@@ -1,0 +1,15 @@
+residuo_salida,familias_aw,pesos_aw,criterio
+CHATARRA,Metales,1,Metal pesado o chatarra de salida equivalente a entradas AW de metales.
+CORTE DE ORILLA,Jardinería|Madera y voluminosos,0.5|0.5,Fracción vegetal o volumétrica similar a jardinería y corte.
+ENVASES,Plásticos,1,Envases no peligrosos de salida aproximados a embalajes y plásticos AW.
+ESCOMBROS,RCD y obra,1,Salida de escombros equivalente a entradas AW de construcción y demolición.
+JARDINERIA (PODAS),Jardinería,1,Restos vegetales y podas.
+MADERAS,Madera y voluminosos|RCD y obra,0.5|0.5,Madera de salida puede proceder de voluminosos o de fracciones RCD madera.
+METALES,Metales,1,Metales no peligrosos.
+MEZCLA RCD,RCD y obra,1,Mezcla de construcción y demolición.
+PLASTICOS,Plásticos|RCD y obra,0.5|0.5,Plástico de salida puede proceder de plástico general o plástico RCD.
+RAEES,RAEE,1,Aparatos eléctricos y electrónicos.
+RECHAZO,Otros voluminosos,1,Fracción residual sin equivalencia AW granular directa; aproximación a otros voluminosos.
+RSU,Otros voluminosos,1,Fracción residual urbana sin equivalencia AW granular directa; aproximación a otros voluminosos.
+TRAT. LINEA BLANCA,RAEE,1,Tratamiento de línea blanca equivalente a grandes aparatos RAEE.
+VOLUMINOSOS,Madera y voluminosos|Otros voluminosos|Reutilización,0.333333|0.333333|0.333334,Voluminosos y objetos domésticos reutilizables/no reutilizables.
