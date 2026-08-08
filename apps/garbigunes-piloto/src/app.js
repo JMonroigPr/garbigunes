@@ -149,7 +149,7 @@ async function loadFlows() {
   if (state.axis !== "flows") { render(); return; }
   $("#axis-callout").innerHTML = "<strong>Cargando</strong><span>Actualizando indicadores y vistas compatibles.</span>";
   try {
-    state.data = await getFlows({ start: state.start, end: state.end, wastes: [...state.wastes], site: state.site, route: state.route }); state.isDemo = false;
+    state.data = await getFlows({ start: state.start, end: state.end, wastes: state.wastesInitialized ? [...state.wastes] : undefined, site: state.site, route: state.route }); state.isDemo = false;
   } catch (error) {
     state.data = DEMO_FLOWS; state.isDemo = true; console.info("Flows fallback:", error.message);
   }
